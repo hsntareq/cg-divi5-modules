@@ -1,0 +1,10 @@
+// This style will render only on Visual Builder.
+
+.cg_static_module {
+    position: relative !important;
+}
+
+.cg_static_module .et-vb-module-mousetrap {
+    z-index: 10 !important;
+    pointer-events: initial !important;
+}

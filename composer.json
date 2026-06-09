@@ -1,0 +1,9 @@
+{
+    "name": "cg/divi5-modules",
+    "autoload": {
+        "psr-4": {
+            "CG\\Divi5Modules\\": "modules/"
+        }
+    },
+    "require": {}
+}
