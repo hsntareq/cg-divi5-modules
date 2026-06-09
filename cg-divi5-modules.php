@@ -93,5 +93,8 @@ function cg_divi5_modules_enqueue_frontend_scripts() {
 	$plugin_dir_url = plugin_dir_url( __FILE__ );
 	$version = file_exists( CG_DIVI5_MODULES_PATH . 'styles/bundle.css' ) ? filemtime( CG_DIVI5_MODULES_PATH . 'styles/bundle.css' ) : '1.0.0';
 	wp_enqueue_style( 'cg-divi5-modules-builder-bundle-style', "{$plugin_dir_url}styles/bundle.css", array(), $version );
+
+	$js_version = file_exists( CG_DIVI5_MODULES_PATH . 'scripts/frontend.js' ) ? filemtime( CG_DIVI5_MODULES_PATH . 'scripts/frontend.js' ) : '1.0.0';
+	wp_enqueue_script( 'cg-divi5-modules-frontend-script', "{$plugin_dir_url}scripts/frontend.js", array(), $js_version, true );
 }
 add_action( 'wp_enqueue_scripts', 'cg_divi5_modules_enqueue_frontend_scripts' );

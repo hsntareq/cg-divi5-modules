@@ -1,11 +1,1 @@
-/*!******************************************************************************************************************************************************************************************!*\
-  !*** css ./node_modules/css-loader/dist/cjs.js??ruleSet[1].rules[2].use[1]!./node_modules/sass-loader/dist/cjs.js??ruleSet[1].rules[2].use[2]!./src/components/static-module/style.scss ***!
-  \******************************************************************************************************************************************************************************************/
-.cg_static_module {
-  position: relative !important;
-}
-
-.cg_static_module .et-vb-module-mousetrap {
-  z-index: 10 !important;
-  pointer-events: initial !important;
-}
+.cg_static_module{position:relative !important}.cg_static_module .et-vb-module-mousetrap{z-index:10 !important;pointer-events:initial !important}

@@ -13,10 +13,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 use CG\Divi5Modules\StaticModule\StaticModule;
+use CG\Divi5Modules\Carousel\Carousel;
+use CG\Divi5Modules\CarouselItem\CarouselItem;
 
 add_action(
 	'divi_module_library_modules_dependency_tree',
 	function ( $dependency_tree ) {
 		$dependency_tree->add_dependency( new StaticModule() );
+		$dependency_tree->add_dependency( new Carousel() );
+		$dependency_tree->add_dependency( new CarouselItem() );
 	}
 );

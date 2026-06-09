@@ -8,6 +8,7 @@ module.exports = {
   // @see https://webpack.js.org/concepts/#entry
   entry: {
     bundle: './src/index.ts',
+    frontend: './src/frontend.ts',
   },
 
   // Divi Visual Builder use of scripts that is already enqueued by WordPress and available
