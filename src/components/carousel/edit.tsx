@@ -1,54 +1,32 @@
-import React, { ReactElement } from 'react';
+import React, { ReactElement, useEffect } from 'react';
 import { ChildModulesContainer, ModuleContainer } from '@divi/module';
-import { useSelect } from '@wordpress/data';
 import { CarouselEditProps } from './types';
 import { ModuleStyles } from './styles';
 import { ModuleScriptData } from './module-script-data';
 import { moduleClassnames } from './module-classnames';
 
-interface CarouselAttachmentImageProps {
-  id: number;
-  showTitle: boolean;
-  showImage: boolean;
-}
-
-const CarouselAttachmentImage = ({ id, showTitle, showImage }: CarouselAttachmentImageProps) => {
-  const media = useSelect((select: any) => {
-    return select('core').getMedia(id);
-  }, [id]);
-
-  if (!media) {
-    return (
-      <div className="cg_carousel_item loading-slide">
-        <div className="cg_carousel_item__inner">
-          <div className="cg_carousel_item__image" style={{ background: '#f5f5f5', borderRadius: '4px', minHeight: '100px' }}>
-          </div>
-        </div>
-      </div>
-    );
+const fetchMediaDetails = async (id: number) => {
+  let root = '/wp-json/';
+  if (typeof window !== 'undefined' && (window as any).wpApiSettings?.root) {
+    root = (window as any).wpApiSettings.root;
+  }
+  
+  let fetchUrl = '';
+  if (root.includes('?')) {
+    fetchUrl = `${root}wp/v2/media/${id}`;
+  } else {
+    const separator = root.endsWith('/') ? '' : '/';
+    fetchUrl = `${root}${separator}wp/v2/media/${id}`;
   }
 
-  const src = media.source_url || '';
-  const alt = media.alt_text || '';
-  const title = typeof media.title === 'object' ? media.title?.rendered : media.title || '';
-
-  return (
-    <div className="cg_carousel_item">
-      <div className="cg_carousel_item__inner">
-        {showImage && src && (
-          <div className="cg_carousel_item__image">
-            <img src={src} alt={alt} />
-          </div>
-        )}
-        
-        {showTitle && title && (
-          <div className="cg_carousel_item__content-container">
-            <h3 className="cg_carousel_item__title">{title}</h3>
-          </div>
-        )}
-      </div>
-    </div>
-  );
+  const res = await fetch(fetchUrl);
+  if (!res.ok) throw new Error('Failed to fetch media');
+  const data = await res.json();
+  return {
+    src: data.source_url || '',
+    alt: data.alt_text || '',
+    title: typeof data.title === 'object' ? data.title?.rendered : data.title || '',
+  };
 };
 
 export const CarouselEdit = (props: CarouselEditProps): ReactElement => {
@@ -63,17 +41,73 @@ export const CarouselEdit = (props: CarouselEditProps): ReactElement => {
   const slidesToShowAttr = attrs.slidesToShow?.innerContent?.desktop?.value || attrs.slidesToShow?.desktop?.value || '4';
   const slidesToShow = String(slidesToShowAttr).replace(/[^0-9]/g, '') || '4';
 
-  const showTitleAttr = attrs.showTitle?.innerContent?.desktop?.value ?? 'on';
-  const showImageAttr = attrs.showImage?.innerContent?.desktop?.value ?? 'on';
-  const showTitle = showTitleAttr === 'on';
-  const showImage = showImageAttr === 'on';
-
-  const galleryIdsVal = attrs.galleryIds?.innerContent?.desktop?.value || attrs.galleryIds?.desktop?.value || '';
-  const ids = galleryIdsVal ? galleryIdsVal.split(',').map((item: string) => parseInt(item.trim(), 10)).filter(Boolean) : [];
-
   const innerStyle = {
     '--slides-to-show': slidesToShow,
   } as React.CSSProperties;
+
+  useEffect(() => {
+    const galleryIdsVal = attrs.galleryIds?.innerContent?.desktop?.value || attrs.galleryIds?.desktop?.value || '';
+    if (!galleryIdsVal) return;
+
+    const idsToProcess = galleryIdsVal.split(',').map((item: string) => parseInt(item.trim(), 10)).filter(Boolean);
+    if (idsToProcess.length === 0) return;
+
+    // Immediately clear parent galleryIds to avoid infinite loop
+    const clearedAttr = {
+      galleryIds: {
+        innerContent: {
+          desktop: {
+            value: ''
+          }
+        }
+      }
+    };
+
+    if (typeof window !== 'undefined' && (window as any).wp?.data && (window as any).wp?.blocks) {
+      const wpData = (window as any).wp.data;
+      const wpBlocks = (window as any).wp.blocks;
+
+      wpData.dispatch('core/block-editor').updateBlockAttributes(id, clearedAttr);
+
+      Promise.all(idsToProcess.map(idVal => fetchMediaDetails(idVal).catch(() => null)))
+        .then(results => {
+          const blocksToInsert = results
+            .map((mediaInfo: any, idx) => {
+              if (!mediaInfo) return null;
+              const attachmentId = idsToProcess[idx];
+              return wpBlocks.createBlock('cg/carousel-item', {
+                image: {
+                  innerContent: {
+                    desktop: {
+                      value: {
+                        src: mediaInfo.src,
+                        id: attachmentId,
+                        alt: mediaInfo.alt,
+                        titleText: mediaInfo.title
+                      }
+                    }
+                  }
+                },
+                title: {
+                  innerContent: {
+                    desktop: {
+                      value: mediaInfo.title
+                    }
+                  }
+                }
+              });
+            })
+            .filter(Boolean);
+
+          if (blocksToInsert.length > 0) {
+            wpData.dispatch('core/block-editor').insertBlocks(blocksToInsert, undefined, id);
+          }
+        })
+        .catch(err => {
+          console.error('Error importing gallery images as carousel items:', err);
+        });
+    }
+  }, [attrs.galleryIds, id]);
 
   return (
     <ModuleContainer
@@ -93,14 +127,6 @@ export const CarouselEdit = (props: CarouselEditProps): ReactElement => {
       <div className="cg_carousel__inner" style={innerStyle}>
         <div className="cg_carousel__track-wrapper">
           <div className="cg_carousel__track">
-            {ids.map((idVal: number) => (
-              <CarouselAttachmentImage 
-                key={idVal} 
-                id={idVal} 
-                showTitle={showTitle} 
-                showImage={showImage} 
-              />
-            ))}
             <ChildModulesContainer ids={childrenIds} />
           </div>
         </div>
