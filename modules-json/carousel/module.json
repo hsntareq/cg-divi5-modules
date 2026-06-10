@@ -353,6 +353,32 @@
           }
         }
       }
+    },
+    "galleryIds": {
+      "type": "object",
+      "default": {
+        "innerContent": {
+          "desktop": {
+            "value": ""
+          }
+        }
+      },
+      "settings": {
+        "innerContent": {
+          "groupType": "group-item",
+          "item": {
+            "groupSlug": "sliderSettingsGroup",
+            "attrName": "galleryIds.innerContent",
+            "priority": 5,
+            "render": true,
+            "label": "Gallery Images",
+            "component": {
+              "name": "divi/upload-gallery",
+              "type": "field"
+            }
+          }
+        }
+      }
     }
   },
   "customCssFields": {},
