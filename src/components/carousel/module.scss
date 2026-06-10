@@ -86,30 +86,49 @@
 
 /* Visual Builder Specific Rules */
 .cg_carousel_parent {
-  border: 1px dashed #ccc;
-  padding: 15px;
-  background: #fdfdfd;
+  border: 1px dashed #eee;
+  padding: 20px;
+  background: #fafafa;
+  overflow: hidden;
 
   &::before {
-    content: "Carousel Slider Container";
+    content: "Carousel Slider Builder";
     display: block;
     font-size: 11px;
     text-transform: uppercase;
-    color: #999;
-    margin-bottom: 8px;
+    color: #aaa;
+    margin-bottom: 12px;
     font-weight: 600;
   }
 
   .cg_carousel__track-wrapper {
-    overflow: visible; /* Show all slides in VB so they can be clicked and edited */
+    overflow-x: auto; /* Allow horizontal scrolling to edit overflow slides */
+    padding-bottom: 10px; /* spacing for scrollbar */
+    
+    /* Custom thin scrollbar for premium aesthetics */
+    &::-webkit-scrollbar {
+      height: 6px;
+    }
+    &::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 3px;
+    }
+    &::-webkit-scrollbar-thumb {
+      background: #ccc;
+      border-radius: 3px;
+      &:hover {
+        background: #999;
+      }
+    }
   }
 
   .cg_carousel__track {
     display: flex;
-    flex-direction: column; /* Stack slides vertically in VB for easy editing */
-    gap: 15px;
+    flex-direction: row; /* Horizontal */
+    flex-wrap: nowrap;
     transform: none !important;
     transition: none !important;
+    width: 100%;
   }
 
   /* Hide navigation controls in builder to avoid distraction */

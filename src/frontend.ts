@@ -12,7 +12,8 @@ document.addEventListener('DOMContentLoaded', () => {
       transitionSpeed: 500,
       loop: 'on',
       arrows: 'on',
-      dots: 'on'
+      dots: 'on',
+      slidesToShow: 4
     };
 
     const settingsAttr = inner.getAttribute('data-settings');
@@ -27,30 +28,53 @@ document.addEventListener('DOMContentLoaded', () => {
     const track = carousel.querySelector('.cg_carousel__track') as HTMLElement;
     if (!track) return;
 
-    const slides = Array.from(track.children) as HTMLElement[];
-    const slidesCount = slides.length;
-    if (slidesCount <= 1) return; // No need to slide if 1 or 0 slides
+    const originalSlides = Array.from(track.children) as HTMLElement[];
+    const originalCount = originalSlides.length;
+    const slidesToShow = Number(settings.slidesToShow) || 4;
 
-    // Track active index
-    let currentIndex = 1; // 1 because of pre-cloned slide
+    // If the number of slides is less than or equal to slidesToShow, we do not need to slide or clone
+    if (originalCount <= slidesToShow) {
+      track.style.transition = 'none';
+      track.style.transform = 'none';
+      
+      // Hide arrows and dots since they aren't needed
+      return;
+    }
+
+    // Track active index (initially equal to slidesToShow because of prepended clones)
+    let currentIndex = slidesToShow;
     let isTransitioning = false;
     let autoplayTimer: any = null;
 
-    // Apply transition duration to track
+    // Apply initial transition speed to track
     track.style.transition = `transform ${settings.transitionSpeed}ms ease-in-out`;
 
-    // Clone first and last slides for infinite loop
-    const firstClone = slides[0].cloneNode(true) as HTMLElement;
-    const lastClone = slides[slidesCount - 1].cloneNode(true) as HTMLElement;
-    
-    // Mark them as clones
-    firstClone.classList.add('cg_carousel__slide--clone');
-    lastClone.classList.add('cg_carousel__slide--clone');
+    // Clone first slidesToShow slides and append them to the end
+    const appendedClones: HTMLElement[] = [];
+    for (let i = 0; i < slidesToShow; i++) {
+      const clone = originalSlides[i].cloneNode(true) as HTMLElement;
+      clone.classList.add('cg_carousel__slide--clone');
+      appendedClones.push(clone);
+    }
 
-    track.appendChild(firstClone);
-    track.insertBefore(lastClone, slides[0]);
+    // Clone last slidesToShow slides and prepend them to the beginning
+    const prependedClones: HTMLElement[] = [];
+    for (let i = originalCount - slidesToShow; i < originalCount; i++) {
+      const clone = originalSlides[i].cloneNode(true) as HTMLElement;
+      clone.classList.add('cg_carousel__slide--clone');
+      prependedClones.push(clone);
+    }
 
-    // Update initial position translating past the lastClone at index 0
+    // Append the clones to the end
+    appendedClones.forEach(clone => track.appendChild(clone));
+
+    // Prepend the clones to the beginning before the original first child
+    const firstOriginal = originalSlides[0];
+    prependedClones.forEach(clone => {
+      track.insertBefore(clone, firstOriginal);
+    });
+
+    // Update initial position translating past prepended clones
     updateSlidePosition(false);
 
     // Dynamic Navigation: Arrows
@@ -94,14 +118,14 @@ document.addEventListener('DOMContentLoaded', () => {
       dotsContainer = document.createElement('div');
       dotsContainer.className = 'cg_carousel__dots';
 
-      for (let i = 0; i < slidesCount; i++) {
+      for (let i = 0; i < originalCount; i++) {
         const dot = document.createElement('button');
         dot.className = 'cg_carousel__dot' + (i === 0 ? ' active' : '');
         dot.setAttribute('aria-label', `Go to slide ${i + 1}`);
         dot.addEventListener('click', () => {
           if (isTransitioning) return;
           stopAutoplay();
-          goToSlide(i + 1);
+          goToSlide(slidesToShow + i);
           startAutoplay();
         });
         dotsContainer.appendChild(dot);
@@ -116,18 +140,19 @@ document.addEventListener('DOMContentLoaded', () => {
       } else {
         track.style.transition = 'none';
       }
-      track.style.transform = `translateX(-${currentIndex * 100}%)`;
+      const translatePercent = currentIndex * (100 / slidesToShow);
+      track.style.transform = `translateX(-${translatePercent}%)`;
     }
 
     function updateActiveDot() {
       if (!dotsContainer) return;
-      // Calculate dot index based on current slide index (1-based, minus clones)
-      let dotIndex = currentIndex - 1;
-      if (currentIndex === 0) {
-        dotIndex = slidesCount - 1;
-      } else if (currentIndex === slidesCount + 1) {
-        dotIndex = 0;
+      
+      // Calculate dot index based on current slide index offset by slidesToShow
+      let dotIndex = (currentIndex - slidesToShow) % originalCount;
+      if (dotIndex < 0) {
+        dotIndex += originalCount;
       }
+      
       dotElements.forEach((dot, index) => {
         if (index === dotIndex) {
           dot.classList.add('active');
@@ -150,12 +175,12 @@ document.addEventListener('DOMContentLoaded', () => {
       isTransitioning = false;
       
       if (currentIndex === 0) {
-        // Jump to last original slide (slidesCount) without transition
-        currentIndex = slidesCount;
+        // Jump to last original slide (originalCount) without transition
+        currentIndex = originalCount;
         updateSlidePosition(false);
-      } else if (currentIndex === slidesCount + 1) {
-        // Jump to first original slide (1) without transition
-        currentIndex = 1;
+      } else if (currentIndex === originalCount + slidesToShow) {
+        // Jump to first original slide (slidesToShow) without transition
+        currentIndex = slidesToShow;
         updateSlidePosition(false);
       }
     });

@@ -45,6 +45,7 @@ export interface CarouselAttrs extends InternalAttrs {
   loop?: FormatBreakpointStateAttr<string>;
   arrows?: FormatBreakpointStateAttr<string>;
   dots?: FormatBreakpointStateAttr<string>;
+  slidesToShow?: FormatBreakpointStateAttr<string>;
 }
 
 export type CarouselEditProps = ModuleEditProps<CarouselAttrs>;

@@ -228,6 +228,36 @@
           }
         }
       }
+    },
+    "slidesToShow": {
+      "type": "string",
+      "default": {
+        "desktop": {
+          "value": "4"
+        }
+      },
+      "settings": {
+        "innerContent": {
+          "groupType": "group-item",
+          "item": {
+            "groupSlug": "sliderSettingsGroup",
+            "attrName": "slidesToShow",
+            "priority": 70,
+            "render": true,
+            "label": "Slides To Show",
+            "component": {
+              "name": "divi/range",
+              "type": "field",
+              "props": {
+                "min": 1,
+                "max": 8,
+                "step": 1,
+                "allowedUnits": []
+              }
+            }
+          }
+        }
+      }
     }
   },
   "customCssFields": {},

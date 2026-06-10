@@ -1,94 +1,66 @@
 .cg_carousel_item {
-  width: 100%;
   box-sizing: border-box;
-  flex: 0 0 100%;
+  flex: 0 0 calc(100% / var(--slides-to-show, 4));
+  max-width: calc(100% / var(--slides-to-show, 4));
+  padding: 0 10px; /* spacing between items */
+  transition: opacity 0.3s;
   
   .cg_carousel_item__inner {
     display: flex;
-    flex-direction: row;
-    gap: 30px;
+    flex-direction: column; /* Stacked vertically for logo slider */
+    gap: 10px;
     align-items: center;
+    justify-content: center;
+    text-align: center;
     background: #ffffff;
-    border-radius: 12px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
-    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+    padding: 15px;
     box-sizing: border-box;
-    border: 1px solid rgba(0, 0, 0, 0.05);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    transition: transform 0.2s, box-shadow 0.2s;
+    height: 100%; /* Equal height cards */
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+    }
   }
 
   .cg_carousel_item__image {
-    flex: 0 0 40%;
-    max-width: 40%;
+    flex: 0 0 auto;
+    width: 100%;
+    height: 60px; /* Fixed height for clean logo alignment */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
     
     img {
-      width: 100%;
+      max-width: 100%;
+      max-height: 100%;
+      width: auto;
       height: auto;
-      border-radius: 8px;
+      border-radius: 4px;
       display: block;
-      object-fit: cover;
+      object-fit: contain; /* Do not stretch logo images */
     }
   }
 
   .cg_carousel_item__content-container {
-    flex: 1;
+    flex: 0 0 auto;
     display: flex;
     flex-direction: column;
-    gap: 15px;
+    gap: 4px;
+    width: 100%;
+    margin-top: 5px;
   }
 
   .cg_carousel_item__title {
     margin: 0;
-    font-size: 24px;
-    font-weight: 700;
-    color: #333;
-  }
-
-  .cg_carousel_item__content {
-    font-size: 15px;
-    line-height: 1.6;
-    color: #666;
-  }
-
-  .cg_carousel_item__button-wrapper {
-    margin-top: 10px;
-  }
-
-  .cg_carousel_item__button {
-    display: inline-block;
-    background: #0073aa;
-    color: #ffffff;
-    padding: 10px 24px;
-    border-radius: 30px;
+    font-size: 13px; /* Slightly smaller title for logo captions */
     font-weight: 600;
-    font-size: 14px;
-    text-decoration: none;
-    transition: background 0.3s, transform 0.2s;
-    cursor: pointer;
-
-    &:hover {
-      background: #005177;
-      transform: translateY(-2px);
-    }
-    
-    a {
-      color: inherit;
-      text-decoration: none;
-    }
-  }
-}
-
-/* Responsiveness */
-@media (max-width: 767px) {
-  .cg_carousel_item {
-    .cg_carousel_item__inner {
-      flex-direction: column;
-      padding: 20px;
-      gap: 20px;
-    }
-
-    .cg_carousel_item__image {
-      flex: 0 0 100%;
-      max-width: 100%;
-    }
+    color: #444;
+    word-break: break-word;
   }
 }

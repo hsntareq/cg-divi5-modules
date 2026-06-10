@@ -47,6 +47,7 @@ trait RenderCallbackTrait {
 		$loop             = $attrs['loop']['desktop']['value'] ?? 'on';
 		$arrows           = $attrs['arrows']['desktop']['value'] ?? 'on';
 		$dots             = $attrs['dots']['desktop']['value'] ?? 'on';
+		$slides_to_show   = $attrs['slidesToShow']['desktop']['value'] ?? '4';
 
 		$settings = [
 			'autoplay'        => $autoplay,
@@ -55,6 +56,7 @@ trait RenderCallbackTrait {
 			'loop'            => $loop,
 			'arrows'          => $arrows,
 			'dots'            => $dots,
+			'slidesToShow'    => (int) $slides_to_show,
 		];
 		$data_settings = json_encode( $settings );
 
@@ -64,6 +66,7 @@ trait RenderCallbackTrait {
 				'attributes'        => [
 					'class'         => 'cg_carousel__inner',
 					'data-settings' => $data_settings,
+					'style'         => "--slides-to-show: {$slides_to_show};",
 				],
 				'childrenSanitizer' => 'et_core_esc_previously',
 				'children'          => HTMLUtility::render(

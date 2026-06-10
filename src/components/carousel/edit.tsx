@@ -14,6 +14,11 @@ export const CarouselEdit = (props: CarouselEditProps): ReactElement => {
     childrenIds,
   } = props;
 
+  const slidesToShow = attrs.slidesToShow?.desktop?.value || '4';
+  const innerStyle = {
+    '--slides-to-show': slidesToShow,
+  } as React.CSSProperties;
+
   return (
     <ModuleContainer
       attrs={attrs}
@@ -29,7 +34,7 @@ export const CarouselEdit = (props: CarouselEditProps): ReactElement => {
         attrName: 'module',
       })}
       
-      <div className="cg_carousel__inner">
+      <div className="cg_carousel__inner" style={innerStyle}>
         <div className="cg_carousel__track-wrapper">
           <div className="cg_carousel__track">
             <ChildModulesContainer ids={childrenIds} />
