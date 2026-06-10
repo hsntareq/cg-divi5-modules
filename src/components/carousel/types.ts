@@ -69,6 +69,9 @@ export interface CarouselAttrs extends InternalAttrs {
   showImage?: {
     innerContent?: FormatBreakpointStateAttr<string>;
   };
+  galleryIds?: {
+    innerContent?: FormatBreakpointStateAttr<string>;
+  };
 }
 
 export type CarouselEditProps = ModuleEditProps<CarouselAttrs>;
