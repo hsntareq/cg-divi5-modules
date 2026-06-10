@@ -353,32 +353,6 @@
           }
         }
       }
-    },
-    "galleryIds": {
-      "type": "object",
-      "default": {
-        "innerContent": {
-          "desktop": {
-            "value": ""
-          }
-        }
-      },
-      "settings": {
-        "innerContent": {
-          "groupType": "group-item",
-          "item": {
-            "groupName": "mainContent",
-            "attrName": "galleryIds.innerContent",
-            "priority": 5,
-            "render": true,
-            "label": "Bulk Add Images as Carousel Items",
-            "component": {
-              "name": "divi/upload-gallery",
-              "type": "field"
-            }
-          }
-        }
-      }
     }
   },
   "customCssFields": {},
