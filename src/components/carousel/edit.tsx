@@ -63,45 +63,48 @@ export const CarouselEdit = (props: CarouselEditProps): ReactElement => {
       }
     };
 
-    if (typeof window !== 'undefined' && (window as any).wp?.data && (window as any).wp?.blocks) {
+    if (typeof window !== 'undefined' && (window as any).wp?.data) {
       const wpData = (window as any).wp.data;
-      const wpBlocks = (window as any).wp.blocks;
 
-      wpData.dispatch('core/block-editor').updateBlockAttributes(id, clearedAttr);
+      // Clear parent galleryIds using Divi 5's native edit-post store
+      wpData.dispatch('divi/edit-post').editModuleAttribute(id, 'galleryIds', clearedAttr);
 
       Promise.all(idsToProcess.map(idVal => fetchMediaDetails(idVal).catch(() => null)))
         .then(results => {
-          const blocksToInsert = results
-            .map((mediaInfo: any, idx) => {
-              if (!mediaInfo) return null;
-              const attachmentId = idsToProcess[idx];
-              return wpBlocks.createBlock('cg/carousel-item', {
-                image: {
-                  innerContent: {
-                    desktop: {
-                      value: {
-                        src: mediaInfo.src,
-                        id: attachmentId,
-                        alt: mediaInfo.alt,
-                        titleText: mediaInfo.title
+          results.forEach((mediaInfo: any, idx) => {
+            if (!mediaInfo) return;
+            const attachmentId = idsToProcess[idx];
+
+            // Add the child Carousel Item module inside the parent using Divi 5's store
+            wpData.dispatch('divi/edit-post').addModule(
+              id,
+              'cg/carousel-item',
+              {
+                attrs: {
+                  image: {
+                    innerContent: {
+                      desktop: {
+                        value: {
+                          src: mediaInfo.src,
+                          id: attachmentId,
+                          alt: mediaInfo.alt,
+                          titleText: mediaInfo.title
+                        }
+                      }
+                    }
+                  },
+                  title: {
+                    innerContent: {
+                      desktop: {
+                        value: mediaInfo.title
                       }
                     }
                   }
-                },
-                title: {
-                  innerContent: {
-                    desktop: {
-                      value: mediaInfo.title
-                    }
-                  }
                 }
-              });
-            })
-            .filter(Boolean);
-
-          if (blocksToInsert.length > 0) {
-            wpData.dispatch('core/block-editor').insertBlocks(blocksToInsert, undefined, id);
-          }
+              },
+              'inside'
+            );
+          });
         })
         .catch(err => {
           console.error('Error importing gallery images as carousel items:', err);
