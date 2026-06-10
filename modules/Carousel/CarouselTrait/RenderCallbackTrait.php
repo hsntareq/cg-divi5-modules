@@ -41,22 +41,40 @@ trait RenderCallbackTrait {
 		$parent_attrs = $parent->attrs ?? [];
 
 		// Read slider settings.
-		$autoplay         = $attrs['autoplay']['desktop']['value'] ?? 'off';
-		$speed            = $attrs['speed']['desktop']['value'] ?? '3000';
-		$transition_speed = $attrs['transitionSpeed']['desktop']['value'] ?? '500';
-		$loop             = $attrs['loop']['desktop']['value'] ?? 'on';
-		$arrows           = $attrs['arrows']['desktop']['value'] ?? 'on';
-		$dots             = $attrs['dots']['desktop']['value'] ?? 'on';
-		$slides_to_show   = $attrs['slidesToShow']['desktop']['value'] ?? '4';
+		$autoplay         = self::get_attribute_value( $attrs, 'autoplay', 'off' );
+		$speed            = self::get_attribute_value( $attrs, 'speed', '3000' );
+		$transition_speed = self::get_attribute_value( $attrs, 'transitionSpeed', '500' );
+		$loop             = self::get_attribute_value( $attrs, 'loop', 'on' );
+		$arrows           = self::get_attribute_value( $attrs, 'arrows', 'on' );
+		$dots             = self::get_attribute_value( $attrs, 'dots', 'on' );
+		$slides_to_show   = self::get_attribute_value( $attrs, 'slidesToShow', '4' );
+		$marquee          = self::get_attribute_value( $attrs, 'marquee', 'off' );
+
+		// Clean numerical string inputs from database (e.g. "4px" or "3000px")
+		$slides_to_show_num   = (int) $slides_to_show;
+		$speed_num            = (int) $speed;
+		$transition_speed_num = (int) $transition_speed;
+
+		// Default fallbacks if casting resulted in 0 or invalid values
+		if ( $slides_to_show_num <= 0 ) {
+			$slides_to_show_num = 4;
+		}
+		if ( $speed_num <= 0 ) {
+			$speed_num = 3000;
+		}
+		if ( $transition_speed_num <= 0 ) {
+			$transition_speed_num = 500;
+		}
 
 		$settings = [
 			'autoplay'        => $autoplay,
-			'speed'           => (int) $speed,
-			'transitionSpeed' => (int) $transition_speed,
+			'speed'           => $speed_num,
+			'transitionSpeed' => $transition_speed_num,
 			'loop'            => $loop,
 			'arrows'          => $arrows,
 			'dots'            => $dots,
-			'slidesToShow'    => (int) $slides_to_show,
+			'slidesToShow'    => $slides_to_show_num,
+			'marquee'         => $marquee,
 		];
 		$data_settings = json_encode( $settings );
 
@@ -66,7 +84,7 @@ trait RenderCallbackTrait {
 				'attributes'        => [
 					'class'         => 'cg_carousel__inner',
 					'data-settings' => $data_settings,
-					'style'         => "--slides-to-show: {$slides_to_show};",
+					'style'         => "--slides-to-show: {$slides_to_show_num};",
 				],
 				'childrenSanitizer' => 'et_core_esc_previously',
 				'children'          => HTMLUtility::render(
@@ -125,5 +143,31 @@ trait RenderCallbackTrait {
 				'childrenIds'         => $children_ids,
 			]
 		);
+	}
+
+	/**
+	 * Helper function to safely extract attribute values.
+	 *
+	 * @param array  $attrs   Attributes.
+	 * @param string $name    Attribute name.
+	 * @param mixed  $default Default value.
+	 *
+	 * @return mixed
+	 */
+	public static function get_attribute_value( $attrs, $name, $default ) {
+		if ( ! isset( $attrs[ $name ] ) ) {
+			return $default;
+		}
+		$attr = $attrs[ $name ];
+		if ( is_array( $attr ) ) {
+			if ( isset( $attr['innerContent'] ) && is_array( $attr['innerContent'] ) ) {
+				return $attr['innerContent']['desktop']['value'] ?? $default;
+			}
+			return $attr['desktop']['value'] ?? $default;
+		}
+		if ( is_string( $attr ) ) {
+			return $attr;
+		}
+		return $default;
 	}
 }

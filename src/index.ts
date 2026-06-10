@@ -7,6 +7,7 @@ import { registerModule } from '@divi/module-library';
 import { staticModule } from './components/static-module';
 import { carousel } from './components/carousel';
 import { carouselItem } from './components/carousel-item';
+import { textMarquee } from './components/text-marquee';
 
 import './module-icons';
 
@@ -15,6 +16,7 @@ const registerModules = () => {
   registerModule(staticModule.metadata, omit(staticModule, 'metadata'));
   registerModule(carousel.metadata, omit(carousel, 'metadata'));
   registerModule(carouselItem.metadata, omit(carouselItem, 'metadata'));
+  registerModule(textMarquee.metadata, omit(textMarquee, 'metadata'));
 };
 
 addAction('divi.moduleLibrary.registerModuleLibraryStore.after', 'cgDivi5Modules', registerModules);

@@ -1,0 +1,17 @@
+{
+  "text": {
+    "decoration": {
+      "font": {
+        "font": {
+          "desktop": {
+            "value": {
+              "size": "24px",
+              "weight": "600",
+              "lineHeight": "1.2em"
+            }
+          }
+        }
+      }
+    }
+  }
+}

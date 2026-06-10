@@ -1,0 +1,228 @@
+{
+  "name": "cg/text-marquee",
+  "d4Shortcode": "",
+  "title": "Text Marquee",
+  "titles": "Text Marquees",
+  "moduleIcon": "cg/module-carousel",
+  "moduleClassName": "cg_text_marquee",
+  "moduleOrderClassName": "cg_text_marquee",
+  "category": "module",
+  "attributes": {
+    "module": {
+      "type": "object",
+      "selector": "{{selector}}",
+      "styleProps": {
+        "border": {
+          "important": true
+        }
+      },
+      "settings": {
+        "meta": {
+          "adminLabel": {}
+        },
+        "advanced": {
+          "link": {},
+          "text": {},
+          "htmlAttributes": {}
+        },
+        "decoration": {
+          "background": {},
+          "sizing": {},
+          "spacing": {},
+          "border": {},
+          "boxShadow": {},
+          "filters": {},
+          "transform": {},
+          "animation": {},
+          "overflow": {},
+          "disabledOn": {},
+          "transition": {},
+          "position": {},
+          "zIndex": {},
+          "scroll": {},
+          "sticky": {}
+        }
+      }
+    },
+    "text": {
+      "type": "object",
+      "selector": "{{selector}} .cg_text_marquee__content",
+      "styleProps": {
+        "font": {
+          "important": {
+            "font": {
+              "desktop": {
+                "value": {
+                  "color": true
+                }
+              }
+            }
+          }
+        }
+      },
+      "settings": {
+        "innerContent": {
+          "groupType": "group-item",
+          "item": {
+            "groupName": "mainContent",
+            "priority": 10,
+            "render": true,
+            "attrName": "text.innerContent",
+            "label": "Marquee Text",
+            "description": "Enter the text to display in the marquee.",
+            "features": {
+              "sticky": false,
+              "dynamicContent": false
+            },
+            "component": {
+              "name": "divi/text",
+              "type": "field"
+            }
+          }
+        },
+        "decoration": {
+          "font": {
+            "priority": 10,
+            "component": {
+              "props": {
+                "groupLabel": "Text Style",
+                "fieldLabel": "Text"
+              }
+            }
+          }
+        }
+      },
+      "tagName": "span",
+      "attributes": {
+        "class": "cg_text_marquee__content"
+      },
+      "inlineEditor": "plainText",
+      "elementType": "text",
+      "childrenSanitizer": "et_core_esc_previously"
+    },
+    "speed": {
+      "type": "object",
+      "default": {
+        "innerContent": {
+          "desktop": {
+            "value": "15"
+          }
+        }
+      },
+      "settings": {
+        "innerContent": {
+          "groupType": "group-item",
+          "item": {
+            "groupSlug": "marqueeSettingsGroup",
+            "attrName": "speed.innerContent",
+            "priority": 20,
+            "render": true,
+            "label": "Speed (Seconds per Loop)",
+            "component": {
+              "name": "divi/range",
+              "type": "field",
+              "props": {
+                "min": 2,
+                "max": 60,
+                "step": 1,
+                "allowedUnits": [],
+                "defaultUnit": ""
+              }
+            }
+          }
+        }
+      }
+    },
+    "direction": {
+      "type": "object",
+      "default": {
+        "innerContent": {
+          "desktop": {
+            "value": "left"
+          }
+        }
+      },
+      "settings": {
+        "innerContent": {
+          "groupType": "group-item",
+          "item": {
+            "groupSlug": "marqueeSettingsGroup",
+            "attrName": "direction.innerContent",
+            "priority": 30,
+            "render": true,
+            "label": "Direction",
+            "component": {
+              "name": "divi/select",
+              "type": "field",
+              "props": {
+                "options": {
+                  "left": {
+                    "label": "Scroll Left"
+                  },
+                  "right": {
+                    "label": "Scroll Right"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "pauseOnHover": {
+      "type": "object",
+      "default": {
+        "innerContent": {
+          "desktop": {
+            "value": "on"
+          }
+        }
+      },
+      "settings": {
+        "innerContent": {
+          "groupType": "group-item",
+          "item": {
+            "groupSlug": "marqueeSettingsGroup",
+            "attrName": "pauseOnHover.innerContent",
+            "priority": 40,
+            "render": true,
+            "label": "Pause on Hover",
+            "component": {
+              "name": "divi/toggle",
+              "type": "field"
+            }
+          }
+        }
+      }
+    }
+  },
+  "customCssFields": {
+    "text": {
+      "subName": "text",
+      "selectorSuffix": " .cg_text_marquee__content"
+    }
+  },
+  "settings": {
+    "content": "auto",
+    "design": "auto",
+    "advanced": "auto",
+    "groups": {
+      "marqueeSettingsGroup": {
+        "panel": "content",
+        "priority": 10,
+        "groupName": "mainContent",
+        "component": {
+          "name": "divi/composite",
+          "props": {
+            "groupLabel": "Marquee Settings"
+          }
+        }
+      }
+    }
+  },
+  "mousetrap": {
+    "inner": {
+      "edited": true
+    }
+  }
+}

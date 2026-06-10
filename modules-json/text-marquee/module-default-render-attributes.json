@@ -1,0 +1,30 @@
+{
+  "text": {
+    "innerContent": {
+      "desktop": {
+        "value": "This is a seamless text marquee slider! • "
+      }
+    }
+  },
+  "speed": {
+    "innerContent": {
+      "desktop": {
+        "value": "15"
+      }
+    }
+  },
+  "direction": {
+    "innerContent": {
+      "desktop": {
+        "value": "left"
+      }
+    }
+  },
+  "pauseOnHover": {
+    "innerContent": {
+      "desktop": {
+        "value": "on"
+      }
+    }
+  }
+}

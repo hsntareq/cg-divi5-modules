@@ -1,7 +1,17 @@
-document.addEventListener('DOMContentLoaded', () => {
+const initCarousel = () => {
   const carousels = document.querySelectorAll('.cg_carousel');
 
   carousels.forEach((carousel) => {
+    // Avoid double-initialization
+    if (carousel.classList.contains('cg_carousel--initialized')) return;
+    
+    // Prevent the slider script from executing inside the Visual Builder canvas
+    if (carousel.classList.contains('cg_carousel_parent') || carousel.closest('.cg_carousel_parent')) {
+      return;
+    }
+    
+    carousel.classList.add('cg_carousel--initialized');
+
     // Find settings
     const inner = carousel.querySelector('.cg_carousel__inner') as HTMLElement;
     if (!inner) return;
@@ -13,7 +23,8 @@ document.addEventListener('DOMContentLoaded', () => {
       loop: 'on',
       arrows: 'on',
       dots: 'on',
-      slidesToShow: 4
+      slidesToShow: 4,
+      marquee: 'off'
     };
 
     const settingsAttr = inner.getAttribute('data-settings');
@@ -36,12 +47,50 @@ document.addEventListener('DOMContentLoaded', () => {
     if (originalCount <= slidesToShow) {
       track.style.transition = 'none';
       track.style.transform = 'none';
-      
-      // Hide arrows and dots since they aren't needed
       return;
     }
 
-    // Track active index (initially equal to slidesToShow because of prepended clones)
+    // ----------------------------------------------------
+    // MODE A: MARQUEE MODE (Continuous scrolling)
+    // ----------------------------------------------------
+    if (settings.marquee === 'on') {
+      // Clone all original slides once to cover scrolling overflow seamlessly
+      originalSlides.forEach((slide) => {
+        const clone = slide.cloneNode(true) as HTMLElement;
+        clone.classList.add('cg_carousel__slide--clone');
+        track.appendChild(clone);
+      });
+
+      // Generate a unique CSS Keyframe animation name
+      const animName = `cg_marquee_${Math.random().toString(36).substr(2, 9)}`;
+      const translatePercent = originalCount * (100 / slidesToShow);
+
+      const styleTag = document.createElement('style');
+      styleTag.innerHTML = `
+        @keyframes ${animName} {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-${translatePercent}%); }
+        }
+      `;
+      carousel.appendChild(styleTag);
+
+      // Apply keyframe animation
+      track.style.transition = 'none';
+      track.style.animation = `${animName} ${settings.speed}ms linear infinite`;
+
+      // Pause marquee on hover and resume on leave
+      inner.addEventListener('mouseenter', () => {
+        track.style.animationPlayState = 'paused';
+      });
+      inner.addEventListener('mouseleave', () => {
+        track.style.animationPlayState = 'running';
+      });
+      return;
+    }
+
+    // ----------------------------------------------------
+    // MODE B: STANDARD INFINITE LOOP SLIDER
+    // ----------------------------------------------------
     let currentIndex = slidesToShow;
     let isTransitioning = false;
     let autoplayTimer: any = null;
@@ -65,19 +114,19 @@ document.addEventListener('DOMContentLoaded', () => {
       prependedClones.push(clone);
     }
 
-    // Append the clones to the end
+    // Append clones
     appendedClones.forEach(clone => track.appendChild(clone));
 
-    // Prepend the clones to the beginning before the original first child
+    // Prepend clones
     const firstOriginal = originalSlides[0];
     prependedClones.forEach(clone => {
       track.insertBefore(clone, firstOriginal);
     });
 
-    // Update initial position translating past prepended clones
+    // Translate past prepended clones
     updateSlidePosition(false);
 
-    // Dynamic Navigation: Arrows
+    // Navigation: Arrows
     let prevBtn: HTMLButtonElement | null = null;
     let nextBtn: HTMLButtonElement | null = null;
 
@@ -110,7 +159,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
 
-    // Dynamic Navigation: Dots
+    // Navigation: Dots
     let dotsContainer: HTMLDivElement | null = null;
     let dotElements: HTMLButtonElement[] = [];
 
@@ -147,7 +196,6 @@ document.addEventListener('DOMContentLoaded', () => {
     function updateActiveDot() {
       if (!dotsContainer) return;
       
-      // Calculate dot index based on current slide index offset by slidesToShow
       let dotIndex = (currentIndex - slidesToShow) % originalCount;
       if (dotIndex < 0) {
         dotIndex += originalCount;
@@ -170,22 +218,20 @@ document.addEventListener('DOMContentLoaded', () => {
       updateSlidePosition(true);
     }
 
-    // Handle transition end to reset position for infinite loop
+    // Wrap resets at transition ends for infinite loops
     track.addEventListener('transitionend', () => {
       isTransitioning = false;
       
       if (currentIndex === 0) {
-        // Jump to last original slide (originalCount) without transition
         currentIndex = originalCount;
         updateSlidePosition(false);
       } else if (currentIndex === originalCount + slidesToShow) {
-        // Jump to first original slide (slidesToShow) without transition
         currentIndex = slidesToShow;
         updateSlidePosition(false);
       }
     });
 
-    // Autoplay implementation
+    // Autoplay timer
     function startAutoplay() {
       if (settings.autoplay !== 'on') return;
       stopAutoplay();
@@ -201,11 +247,16 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-    // Start autoplay
     startAutoplay();
 
-    // Pause autoplay on mouse enter and resume on leave
+    // Mouse pause actions
     inner.addEventListener('mouseenter', stopAutoplay);
     inner.addEventListener('mouseleave', startAutoplay);
   });
-});
+};
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initCarousel);
+} else {
+  initCarousel();
+}

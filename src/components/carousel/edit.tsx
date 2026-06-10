@@ -14,7 +14,8 @@ export const CarouselEdit = (props: CarouselEditProps): ReactElement => {
     childrenIds,
   } = props;
 
-  const slidesToShow = attrs.slidesToShow?.desktop?.value || '4';
+  const slidesToShowAttr = attrs.slidesToShow?.innerContent?.desktop?.value || attrs.slidesToShow?.desktop?.value || '4';
+  const slidesToShow = String(slidesToShowAttr).replace(/[^0-9]/g, '') || '4';
   const innerStyle = {
     '--slides-to-show': slidesToShow,
   } as React.CSSProperties;

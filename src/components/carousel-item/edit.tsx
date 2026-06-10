@@ -11,9 +11,11 @@ export const CarouselItemEdit = (props: CarouselItemEditProps): ReactElement => 
     elements,
     id,
     name,
+    parentAttrs,
   } = props;
 
-
+  const showTitleAttr = parentAttrs?.showTitle?.innerContent?.desktop?.value ?? 'on';
+  const showImageAttr = parentAttrs?.showImage?.innerContent?.desktop?.value ?? 'on';
 
   return (
     <ModuleContainer
@@ -31,17 +33,21 @@ export const CarouselItemEdit = (props: CarouselItemEditProps): ReactElement => 
       })}
 
       <div className="cg_carousel_item__inner">
-        <div className="cg_carousel_item__image">
-          {elements.render({
-            attrName: 'image',
-          })}
-        </div>
+        {showImageAttr === 'on' && (
+          <div className="cg_carousel_item__image">
+            {elements.render({
+              attrName: 'image',
+            })}
+          </div>
+        )}
         
-        <div className="cg_carousel_item__content-container">
-          {elements.render({
-            attrName: 'title',
-          })}
-        </div>
+        {showTitleAttr === 'on' && (
+          <div className="cg_carousel_item__content-container">
+            {elements.render({
+              attrName: 'title',
+            })}
+          </div>
+        )}
       </div>
     </ModuleContainer>
   );

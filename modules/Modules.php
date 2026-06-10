@@ -15,6 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 use CG\Divi5Modules\StaticModule\StaticModule;
 use CG\Divi5Modules\Carousel\Carousel;
 use CG\Divi5Modules\CarouselItem\CarouselItem;
+use CG\Divi5Modules\TextMarquee\TextMarquee;
 
 add_action(
 	'divi_module_library_modules_dependency_tree',
@@ -22,5 +23,6 @@ add_action(
 		$dependency_tree->add_dependency( new StaticModule() );
 		$dependency_tree->add_dependency( new Carousel() );
 		$dependency_tree->add_dependency( new CarouselItem() );
+		$dependency_tree->add_dependency( new TextMarquee() );
 	}
 );

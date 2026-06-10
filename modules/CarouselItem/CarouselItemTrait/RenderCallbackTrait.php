@@ -33,44 +33,72 @@ trait RenderCallbackTrait {
 		$parent = BlockParserStore::get_parent( $block->parsed_block['id'], $block->parsed_block['storeInstance'] );
 		$parent_attrs = $parent->attrs ?? [];
 
-		// Render slide image
-		$image_html = $elements->render(
-			[
-				'attrName' => 'image',
-			]
-		);
+		// Read elements settings from parent.
+		$parent_show_title = 'on';
+		if ( isset( $parent_attrs['showTitle'] ) ) {
+			$attr = $parent_attrs['showTitle'];
+			if ( is_array( $attr ) ) {
+				$parent_show_title = $attr['innerContent']['desktop']['value'] ?? 'on';
+			} elseif ( is_string( $attr ) ) {
+				$parent_show_title = $attr;
+			}
+		}
 
+		$parent_show_image = 'on';
+		if ( isset( $parent_attrs['showImage'] ) ) {
+			$attr = $parent_attrs['showImage'];
+			if ( is_array( $attr ) ) {
+				$parent_show_image = $attr['innerContent']['desktop']['value'] ?? 'on';
+			} elseif ( is_string( $attr ) ) {
+				$parent_show_image = $attr;
+			}
+		}
+
+		// Render slide image
 		$image = '';
-		if ( ! empty( $image_html ) ) {
-			$image = HTMLUtility::render(
+		if ( $parent_show_image === 'on' ) {
+			$image_html = $elements->render(
 				[
-					'tag'               => 'div',
-					'attributes'        => [
-						'class' => 'cg_carousel_item__image',
-					],
-					'childrenSanitizer' => 'et_core_esc_previously',
-					'children'          => $image_html,
+					'attrName' => 'image',
 				]
 			);
+
+			if ( ! empty( $image_html ) ) {
+				$image = HTMLUtility::render(
+					[
+						'tag'               => 'div',
+						'attributes'        => [
+							'class' => 'cg_carousel_item__image',
+						],
+						'childrenSanitizer' => 'et_core_esc_previously',
+						'children'          => $image_html,
+					]
+				);
+			}
 		}
 
 		// Render Title
-		$title = $elements->render(
-			[
-				'attrName' => 'title',
-			]
-		);
+		$content_container = '';
+		if ( $parent_show_title === 'on' ) {
+			$title = $elements->render(
+				[
+					'attrName' => 'title',
+				]
+			);
 
-		$content_container = HTMLUtility::render(
-			[
-				'tag'               => 'div',
-				'attributes'        => [
-					'class' => 'cg_carousel_item__content-container',
-				],
-				'childrenSanitizer' => 'et_core_esc_previously',
-				'children'          => $title,
-			]
-		);
+			if ( ! empty( $title ) ) {
+				$content_container = HTMLUtility::render(
+					[
+						'tag'               => 'div',
+						'attributes'        => [
+							'class' => 'cg_carousel_item__content-container',
+						],
+						'childrenSanitizer' => 'et_core_esc_previously',
+						'children'          => $title,
+					]
+				);
+			}
+		}
 
 		$inner_html = HTMLUtility::render(
 			[

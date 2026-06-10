@@ -6,14 +6,14 @@ import {
   type Module,
 } from '@divi/types';
 
-export interface CarouselCssAttr extends Module.Css.AttributeValue {
+export interface TextMarqueeCssAttr extends Module.Css.AttributeValue {
   mainElement?: string;
 }
 
-export type CarouselCssGroupAttr = FormatBreakpointStateAttr<CarouselCssAttr>;
+export type TextMarqueeCssGroupAttr = FormatBreakpointStateAttr<TextMarqueeCssAttr>;
 
-export interface CarouselAttrs extends InternalAttrs {
-  css?: CarouselCssGroupAttr;
+export interface TextMarqueeAttrs extends InternalAttrs {
+  css?: TextMarqueeCssGroupAttr;
   module?: {
     meta?: Element.Meta.Attributes;
     advanced?: {
@@ -22,7 +22,6 @@ export interface CarouselAttrs extends InternalAttrs {
       text?: Element.Advanced.Text.Attributes;
     };
     decoration?: Element.Decoration.PickedAttributes<
-      'animation' |
       'background' |
       'border' |
       'boxShadow' |
@@ -39,36 +38,16 @@ export interface CarouselAttrs extends InternalAttrs {
       'zIndex'
     >;
   };
-  autoplay?: {
-    innerContent?: FormatBreakpointStateAttr<string>;
-  };
+  text?: Element.Types.Title.Attributes;
   speed?: {
     innerContent?: FormatBreakpointStateAttr<string>;
   };
-  transitionSpeed?: {
+  direction?: {
     innerContent?: FormatBreakpointStateAttr<string>;
   };
-  loop?: {
-    innerContent?: FormatBreakpointStateAttr<string>;
-  };
-  arrows?: {
-    innerContent?: FormatBreakpointStateAttr<string>;
-  };
-  dots?: {
-    innerContent?: FormatBreakpointStateAttr<string>;
-  };
-  slidesToShow?: {
-    innerContent?: FormatBreakpointStateAttr<string>;
-  };
-  marquee?: {
-    innerContent?: FormatBreakpointStateAttr<string>;
-  };
-  showTitle?: {
-    innerContent?: FormatBreakpointStateAttr<string>;
-  };
-  showImage?: {
+  pauseOnHover?: {
     innerContent?: FormatBreakpointStateAttr<string>;
   };
 }
 
-export type CarouselEditProps = ModuleEditProps<CarouselAttrs>;
+export type TextMarqueeEditProps = ModuleEditProps<TextMarqueeAttrs>;
