@@ -111,11 +111,25 @@ export const CarouselEdit = (props: CarouselEditProps): ReactElement => {
       return info.join(' | ');
     };
 
-    const apiFetch = getWpDependency('apiFetch');
-    const dataStore = getWpDependency('data');
+    const rawApiFetch = getWpDependency('apiFetch');
+    const rawDataStore = getWpDependency('data');
 
-    if (!dataStore) {
-      addLog(`wp.data/divi.data not found. Globals: ${debugInspect()}`);
+    let dataStore: any = rawDataStore;
+    if (dataStore && !dataStore.dispatch && dataStore.default?.dispatch) {
+      dataStore = dataStore.default;
+    }
+
+    let apiFetch: any = rawApiFetch;
+    if (apiFetch && typeof apiFetch !== 'function') {
+      if (typeof apiFetch.default === 'function') {
+        apiFetch = apiFetch.default;
+      } else if (typeof apiFetch.apiFetch === 'function') {
+        apiFetch = apiFetch.apiFetch;
+      }
+    }
+
+    if (!dataStore || typeof dataStore.dispatch !== 'function') {
+      addLog(`wp.data/divi.data not found or invalid (resolved: ${typeof rawDataStore}). Globals: ${debugInspect()}`);
       return;
     }
 
@@ -169,8 +183,8 @@ export const CarouselEdit = (props: CarouselEditProps): ReactElement => {
       addLog(`Failed to clear uploader attribute: ${e.message}`);
     }
 
-    if (!apiFetch) {
-      addLog(`wp.apiFetch not found. Globals: ${debugInspect()}`);
+    if (typeof apiFetch !== 'function') {
+      addLog(`wp.apiFetch not found or invalid (resolved: ${typeof rawApiFetch}). Globals: ${debugInspect()}`);
       return;
     }
 
