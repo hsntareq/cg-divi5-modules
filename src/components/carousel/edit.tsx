@@ -1,4 +1,4 @@
-import React, { ReactElement, useEffect } from 'react';
+import React, { ReactElement, useEffect, useState } from 'react';
 import { ChildModulesContainer, ModuleContainer } from '@divi/module';
 import { CarouselEditProps } from './types';
 import { ModuleStyles } from './styles';
@@ -14,6 +14,13 @@ export const CarouselEdit = (props: CarouselEditProps): ReactElement => {
     childrenIds,
   } = props;
 
+  const [logs, setLogs] = useState<string[]>([]);
+  
+  const addLog = (msg: string) => {
+    setLogs(prev => [...prev, `${new Date().toLocaleTimeString()}: ${msg}`]);
+    console.log(`[Carousel VB Log] ${msg}`);
+  };
+
   const slidesToShowAttr = attrs.slidesToShow?.innerContent?.desktop?.value || attrs.slidesToShow?.desktop?.value || '4';
   const slidesToShow = String(slidesToShowAttr).replace(/[^0-9]/g, '') || '4';
 
@@ -22,7 +29,16 @@ export const CarouselEdit = (props: CarouselEditProps): ReactElement => {
   // Listen to galleryIds changes to programmatically create child modules using Divi 5 native store actions
   useEffect(() => {
     const wpGlobal = (window as any).wp;
-    if (!wpGlobal || !wpGlobal.apiFetch || !wpGlobal.data) {
+    if (!wpGlobal) {
+      addLog('wp global object not found');
+      return;
+    }
+    if (!wpGlobal.apiFetch) {
+      addLog('wp.apiFetch not found');
+      return;
+    }
+    if (!wpGlobal.data) {
+      addLog('wp.data not found');
       return;
     }
 
@@ -30,35 +46,59 @@ export const CarouselEdit = (props: CarouselEditProps): ReactElement => {
       return;
     }
 
+    addLog(`Detected galleryIdsVal change: "${galleryIdsVal}"`);
+
     const ids = galleryIdsVal
       .split(',')
       .map((item: string) => parseInt(item.trim(), 10))
       .filter(Boolean);
 
     if (ids.length === 0) {
+      addLog('No valid image IDs found in uploader string');
       return;
     }
 
-    console.log('Carousel Bulk Add: Found galleryIdsVal to process:', galleryIdsVal, 'Parsed IDs:', ids);
+    addLog(`Parsed IDs to fetch: ${ids.join(', ')}`);
 
     // 1. Reset parent's galleryIds attribute synchronously so it clears the settings uploader modal and prevents re-triggering
-    wpGlobal.data.dispatch('divi/edit-post').editModuleAttribute(
-      id,
-      'galleryIds',
-      {
-        innerContent: {
+    try {
+      addLog('Clearing uploader attribute via editModuleAttribute...');
+      
+      // Dispatch both sub-path and root attribute value updates to cover any binding mismatches
+      wpGlobal.data.dispatch('divi/edit-post').editModuleAttribute(
+        id,
+        'galleryIds.innerContent',
+        {
           desktop: {
             value: ''
           }
         }
-      }
-    );
+      );
+
+      wpGlobal.data.dispatch('divi/edit-post').editModuleAttribute(
+        id,
+        'galleryIds',
+        {
+          innerContent: {
+            desktop: {
+              value: ''
+            }
+          }
+        }
+      );
+      
+      addLog('Successfully dispatched cleared uploader attributes.');
+    } catch (e: any) {
+      addLog(`Failed to clear uploader attribute: ${e.message}`);
+    }
 
     // 2. Fetch media details for these IDs using WordPress apiFetch
+    addLog('Fetching media details from WP REST API...');
     wpGlobal.apiFetch({ path: `/wp/v2/media?include=${ids.join(',')}` })
       .then((mediaList: any[]) => {
+        addLog(`Successfully fetched ${mediaList ? mediaList.length : 0} media items`);
         if (!mediaList || mediaList.length === 0) {
-          console.log('Carousel Bulk Add: No media details found from API');
+          addLog('No media items returned from server.');
           return;
         }
 
@@ -67,43 +107,50 @@ export const CarouselEdit = (props: CarouselEditProps): ReactElement => {
           .map(idVal => mediaList.find(m => m.id === idVal))
           .filter(Boolean);
 
-        console.log('Carousel Bulk Add: Adding modules for media items:', sortedMediaList);
+        addLog(`Beginning to add child modules (count: ${sortedMediaList.length})...`);
 
         // 3. For each media item, add a native cg/carousel-item child module inside the parent Carousel
-        sortedMediaList.forEach((media) => {
+        sortedMediaList.forEach((media, index) => {
           const titleText = media.title?.rendered || media.title || '';
-          wpGlobal.data.dispatch('divi/edit-post').addModule(
-            id,
-            'cg/carousel-item',
-            {
-              attrs: {
-                image: {
-                  innerContent: {
-                    desktop: {
-                      value: {
-                        src: media.source_url || '',
-                        id: String(media.id),
-                        alt: media.alt_text || '',
-                        titleText: titleText
+          addLog(`Adding slide #${index + 1}: ID=${media.id}, Title="${titleText}"`);
+          
+          try {
+            wpGlobal.data.dispatch('divi/edit-post').addModule(
+              id,
+              'cg/carousel-item',
+              {
+                attrs: {
+                  image: {
+                    innerContent: {
+                      desktop: {
+                        value: {
+                          src: media.source_url || '',
+                          id: String(media.id),
+                          alt: media.alt_text || '',
+                          titleText: titleText
+                        }
+                      }
+                    }
+                  },
+                  title: {
+                    innerContent: {
+                      desktop: {
+                        value: titleText
                       }
                     }
                   }
-                },
-                title: {
-                  innerContent: {
-                    desktop: {
-                      value: titleText
-                    }
-                  }
                 }
-              }
-            },
-            'inside'
-          );
+              },
+              'inside'
+            );
+            addLog(`Successfully added slide #${index + 1}`);
+          } catch (e: any) {
+            addLog(`Failed to add slide #${index + 1}: ${e.message}`);
+          }
         });
       })
       .catch((err: any) => {
-        console.error('Carousel Bulk Add: Error fetching media details:', err);
+        addLog(`Error fetching media details: ${err.message || err}`);
       });
   }, [galleryIdsVal, id]);
 
@@ -132,6 +179,37 @@ export const CarouselEdit = (props: CarouselEditProps): ReactElement => {
             <ChildModulesContainer ids={childrenIds} />
           </div>
         </div>
+      </div>
+
+      {/* On-screen diagnostic logs for debugging Visual Builder action dispatchers */}
+      <div className="cg-diagnostic-box" style={{
+        background: 'rgba(255, 255, 255, 0.95)',
+        color: '#000',
+        padding: '15px',
+        fontSize: '12px',
+        fontFamily: 'monospace',
+        borderRadius: '6px',
+        margin: '20px auto 10px auto',
+        border: '2px solid #ff4a4a',
+        maxWidth: '600px',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+        zIndex: 99999,
+        position: 'relative',
+        textAlign: 'left'
+      }}>
+        <strong style={{ color: '#d00', fontSize: '13px' }}>⚙️ Carousel Diagnostic Monitor:</strong>
+        <div style={{ marginTop: '5px', fontSize: '10px', color: '#666' }}>
+          <strong>Parent ID:</strong> {id} | <strong>Slides Count:</strong> {childrenIds ? childrenIds.length : 0} | <strong>Uploader Raw:</strong> "{galleryIdsVal}"
+        </div>
+        <ul style={{ margin: '8px 0 0 0', paddingLeft: '20px', lineHeight: '1.4' }}>
+          {logs.length === 0 ? (
+            <li style={{ color: '#777', listStyleType: 'none', marginLeft: '-20px' }}>No actions triggered yet. Select images in settings uploader to start.</li>
+          ) : (
+            logs.map((log, idx) => (
+              <li key={idx}>{log}</li>
+            ))
+          )}
+        </ul>
       </div>
     </ModuleContainer>
   );
