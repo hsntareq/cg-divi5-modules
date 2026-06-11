@@ -1,4 +1,4 @@
-import React, { ReactElement, useEffect } from 'react';
+import React, { ReactElement, useEffect, useRef } from 'react';
 import { ChildModulesContainer, ModuleContainer } from '@divi/module';
 import { CarouselEditProps } from './types';
 import { ModuleStyles } from './styles';
@@ -22,6 +22,7 @@ export const CarouselEdit = (props: CarouselEditProps): ReactElement => {
   const slidesToShow = String(slidesToShowAttr).replace(/[^0-9]/g, '') || '4';
 
   const galleryIdsVal = attrs.galleryIds?.innerContent?.desktop?.value || attrs.galleryIds?.desktop?.value || '';
+  const isFirstRun = useRef(true);
 
   // Listen to galleryIds changes to programmatically create child modules using Divi 5 native store actions
   useEffect(() => {
@@ -120,6 +121,35 @@ export const CarouselEdit = (props: CarouselEditProps): ReactElement => {
       return;
     }
 
+    if (isFirstRun.current) {
+      isFirstRun.current = false;
+      addLog('Skipping initial run of galleryIdsVal listener to prevent duplication on mount/refresh');
+      // Proactively clear the galleryIds in the editor store on mount as well so it doesn't get saved
+      try {
+        dataStore.dispatch('divi/edit-post').editModuleAttribute({
+          id,
+          attrName: 'galleryIds',
+          value: {
+            innerContent: {
+              desktop: {
+                value: ''
+              }
+            }
+          }
+        });
+        dataStore.dispatch('divi/edit-post').editModuleAttribute({
+          id,
+          attrName: 'galleryIds.innerContent',
+          value: {
+            desktop: {
+              value: ''
+            }
+          }
+        });
+      } catch (e) {}
+      return;
+    }
+
     if (!galleryIdsVal) {
       return;
     }
@@ -157,6 +187,22 @@ export const CarouselEdit = (props: CarouselEditProps): ReactElement => {
       addLog('Successfully cleared galleryIds root attribute.');
     } catch (e: any) {
       addLog(`Info: Failed to clear galleryIds root: ${e.message}`);
+    }
+
+    // Also clear sub-path attribute using single object argument format
+    try {
+      dataStore.dispatch('divi/edit-post').editModuleAttribute({
+        id,
+        attrName: 'galleryIds.innerContent',
+        value: {
+          desktop: {
+            value: ''
+          }
+        }
+      });
+      addLog('Successfully cleared galleryIds.innerContent sub-path attribute.');
+    } catch (e: any) {
+      addLog(`Info: Failed to clear galleryIds.innerContent sub-path: ${e.message}`);
     }
 
     // 2. Fetch media details for these IDs using native fetch
