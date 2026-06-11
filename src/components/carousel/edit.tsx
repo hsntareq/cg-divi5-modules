@@ -30,36 +30,42 @@ export const CarouselEdit = (props: CarouselEditProps): ReactElement => {
   useEffect(() => {
     const getWpDependency = (key: string) => {
       if (typeof window !== 'undefined') {
-        try {
-          if ((window as any).wp?.[key]) return (window as any).wp[key];
-        } catch (e) {}
-        try {
-          if ((window as any).divi?.[key]) return (window as any).divi[key];
-        } catch (e) {}
-        try {
-          if ((window.parent as any)?.wp?.[key]) return (window.parent as any).wp[key];
-        } catch (e) {}
-        try {
-          if ((window.parent as any)?.divi?.[key]) return (window.parent as any).divi[key];
-        } catch (e) {}
-        try {
-          if ((window.top as any)?.wp?.[key]) return (window.top as any).wp[key];
-        } catch (e) {}
-        try {
-          if ((window.top as any)?.divi?.[key]) return (window.top as any).divi[key];
-        } catch (e) {}
+        const targets = [window, window.parent, window.top];
+        for (const target of targets) {
+          try {
+            if (!target) continue;
+            const t = target as any;
+            if (t.wp?.[key]) return t.wp[key];
+            if (t.vendor?.wp?.[key]) return t.vendor.wp[key];
+            if (t.divi?.[key]) return t.divi[key];
+            if (t.vendor?.divi?.[key]) return t.vendor.divi[key];
+          } catch (e) {}
+        }
       }
       return null;
     };
 
     const debugInspect = () => {
-      const info = [];
-      try { info.push(`window.wp: ${typeof (window as any).wp}`); } catch(e) {}
-      try { info.push(`window.divi: ${typeof (window as any).divi}`); } catch(e) {}
-      try { info.push(`parent.wp: ${typeof (window.parent as any)?.wp}`); } catch(e) {}
-      try { info.push(`parent.divi: ${typeof (window.parent as any)?.divi}`); } catch(e) {}
-      try { info.push(`top.wp: ${typeof (window.top as any)?.wp}`); } catch(e) {}
-      try { info.push(`top.divi: ${typeof (window.top as any)?.divi}`); } catch(e) {}
+      const info: string[] = [];
+      if (typeof window !== 'undefined') {
+        const contexts = [
+          { name: 'window', obj: window },
+          { name: 'parent', obj: window.parent },
+          { name: 'top', obj: window.top },
+        ];
+        contexts.forEach(ctx => {
+          try {
+            if (!ctx.obj) return;
+            const t = ctx.obj as any;
+            info.push(`${ctx.name}.wp: ${typeof t.wp}`);
+            info.push(`${ctx.name}.vendor.wp: ${typeof t.vendor?.wp}`);
+            info.push(`${ctx.name}.divi: ${typeof t.divi}`);
+            info.push(`${ctx.name}.vendor.divi: ${typeof t.vendor?.divi}`);
+          } catch (e) {
+            info.push(`${ctx.name}.err: cross-origin`);
+          }
+        });
+      }
       return info.join(' | ');
     };
 
