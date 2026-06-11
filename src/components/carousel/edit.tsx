@@ -54,12 +54,20 @@ export const CarouselEdit = (props: CarouselEditProps): ReactElement => {
   useEffect(() => {
     const wpGlobal = (window as any).wp;
     if (!wpGlobal || !wpGlobal.blocks || !wpGlobal.data) {
+      console.log('Carousel Sync: wp global or dependencies not available');
       return;
     }
 
-    const newIds = galleryIdsVal
-      ? galleryIdsVal.split(',').map((item: string) => parseInt(item.trim(), 10)).filter(Boolean)
-      : [];
+    if (!galleryIdsVal) {
+      console.log('Carousel Sync: galleryIdsVal is empty, skipping sync');
+      return;
+    }
+
+    const newIds = galleryIdsVal.split(',').map((item: string) => parseInt(item.trim(), 10)).filter(Boolean);
+    if (newIds.length === 0) {
+      console.log('Carousel Sync: parsed newIds is empty, skipping sync');
+      return;
+    }
 
     // Map current child blocks to their image IDs
     const currentChildren = (innerBlocks || []).map((block: any) => {
@@ -75,17 +83,23 @@ export const CarouselEdit = (props: CarouselEditProps): ReactElement => {
     const currentImageIds = currentChildren.map((c: any) => c.imageId).filter(Boolean);
     const targetIdsStrings = newIds.map(String);
 
+    console.log('Carousel Sync: Current slide image IDs:', currentImageIds);
+    console.log('Carousel Sync: Target gallery image IDs:', targetIdsStrings);
+
     // Check if the current children already match the gallery selection exactly in order and ID
     const isSynced = currentImageIds.length === targetIdsStrings.length &&
       currentImageIds.every((val: string, index: number) => val === targetIdsStrings[index]);
 
     if (isSynced) {
+      console.log('Carousel Sync: Already synced, skipping update');
       return;
     }
 
     // Determine missing IDs that we need to fetch media details for
     const existingImageIdsMap = new Map(currentChildren.map((c: any) => [c.imageId, c.block]));
     const missingIds = newIds.filter(idVal => !existingImageIdsMap.has(String(idVal)));
+
+    console.log('Carousel Sync: Missing image IDs that need fetching:', missingIds);
 
     const processSync = (mediaList: any[] = []) => {
       const fetchedMediaMap = new Map(mediaList.map(m => [String(m.id), m]));
@@ -95,7 +109,7 @@ export const CarouselEdit = (props: CarouselEditProps): ReactElement => {
         const existingBlock = existingImageIdsMap.get(idStr);
 
         if (existingBlock) {
-          // Clone existing block to preserve any custom title/styling modifications
+          console.log(`Carousel Sync: Reusing existing block for image ID ${idStr}`);
           return wpGlobal.blocks.cloneBlock(existingBlock);
         }
 
@@ -103,6 +117,7 @@ export const CarouselEdit = (props: CarouselEditProps): ReactElement => {
         const media = fetchedMediaMap.get(idStr);
         const titleText = media?.title?.rendered || media?.title || '';
 
+        console.log(`Carousel Sync: Creating new block for image ID ${idStr}`);
         return wpGlobal.blocks.createBlock('cg/carousel-item', {
           image: {
             innerContent: {
@@ -126,31 +141,24 @@ export const CarouselEdit = (props: CarouselEditProps): ReactElement => {
         });
       });
 
-      // Replace the inner blocks of the Carousel block
+      console.log('Carousel Sync: Dispatching replaceInnerBlocks with', blocksToSet.length, 'blocks');
       wpGlobal.data.dispatch('core/block-editor').replaceInnerBlocks(id, blocksToSet);
     };
 
     if (missingIds.length > 0) {
-      // Fetch details only for newly added images
-      Promise.all(missingIds.map(idVal => fetchMediaDetails(idVal).catch(() => null)))
-        .then(results => {
-          const mediaList = results.map((res, idx) => {
-            if (!res) return null;
-            return {
-              id: missingIds[idx],
-              source_url: res.src,
-              alt_text: res.alt,
-              title: res.title
-            };
-          }).filter(Boolean);
-
+      console.log('Carousel Sync: Fetching media details via apiFetch for IDs:', missingIds);
+      wpGlobal.apiFetch({ path: `/wp/v2/media?include=${missingIds.join(',')}` })
+        .then((mediaList: any[]) => {
+          console.log('Carousel Sync: Fetched media details successfully:', mediaList);
           processSync(mediaList);
         })
         .catch((err: any) => {
-          console.error('Error fetching media for carousel sync:', err);
+          console.error('Carousel Sync: Error fetching media details:', err);
+          // Sync anyway with fallback empty image properties
+          processSync([]);
         });
     } else {
-      // If no new images are added (only removed or reordered), sync immediately
+      console.log('Carousel Sync: No missing images. Synchronizing block order/deletion synchronously');
       processSync();
     }
   }, [galleryIdsVal, innerBlocks, id]);
