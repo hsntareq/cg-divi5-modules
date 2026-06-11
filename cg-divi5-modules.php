@@ -61,6 +61,8 @@ function cg_divi5_modules_enqueue_vb_scripts() {
 					'deps'               => [
 						'divi-module-library',
 						'divi-vendor-wp-hooks',
+						'divi-vendor-wp-data',
+						'divi-vendor-wp-api-fetch',
 					],
 					'enqueue_top_window' => true,
 					'enqueue_app_window' => true,
