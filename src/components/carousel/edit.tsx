@@ -28,17 +28,23 @@ export const CarouselEdit = (props: CarouselEditProps): ReactElement => {
 
   // Listen to galleryIds changes to programmatically create child modules using Divi 5 native store actions
   useEffect(() => {
-    const wpGlobal = (window as any).wp;
-    if (!wpGlobal) {
-      addLog('wp global object not found');
-      return;
-    }
-    if (!wpGlobal.apiFetch) {
-      addLog('wp.apiFetch not found');
-      return;
-    }
-    if (!wpGlobal.data) {
-      addLog('wp.data not found');
+    const getWpDependency = (key: string) => {
+      if (typeof window !== 'undefined') {
+        if ((window as any).wp?.[key]) {
+          return (window as any).wp[key];
+        }
+        if ((window.parent as any)?.wp?.[key]) {
+          return (window.parent as any).wp[key];
+        }
+      }
+      return null;
+    };
+
+    const apiFetch = getWpDependency('apiFetch');
+    const dataStore = getWpDependency('data');
+
+    if (!dataStore) {
+      addLog('wp.data not found on window or window.parent');
       return;
     }
 
@@ -65,7 +71,7 @@ export const CarouselEdit = (props: CarouselEditProps): ReactElement => {
       addLog('Clearing uploader attribute via editModuleAttribute...');
       
       // Dispatch both sub-path and root attribute value updates to cover any binding mismatches
-      wpGlobal.data.dispatch('divi/edit-post').editModuleAttribute(
+      dataStore.dispatch('divi/edit-post').editModuleAttribute(
         id,
         'galleryIds.innerContent',
         {
@@ -75,7 +81,7 @@ export const CarouselEdit = (props: CarouselEditProps): ReactElement => {
         }
       );
 
-      wpGlobal.data.dispatch('divi/edit-post').editModuleAttribute(
+      dataStore.dispatch('divi/edit-post').editModuleAttribute(
         id,
         'galleryIds',
         {
@@ -92,9 +98,14 @@ export const CarouselEdit = (props: CarouselEditProps): ReactElement => {
       addLog(`Failed to clear uploader attribute: ${e.message}`);
     }
 
+    if (!apiFetch) {
+      addLog('wp.apiFetch not found on window or window.parent');
+      return;
+    }
+
     // 2. Fetch media details for these IDs using WordPress apiFetch
     addLog('Fetching media details from WP REST API...');
-    wpGlobal.apiFetch({ path: `/wp/v2/media?include=${ids.join(',')}` })
+    apiFetch({ path: `/wp/v2/media?include=${ids.join(',')}` })
       .then((mediaList: any[]) => {
         addLog(`Successfully fetched ${mediaList ? mediaList.length : 0} media items`);
         if (!mediaList || mediaList.length === 0) {
@@ -115,7 +126,7 @@ export const CarouselEdit = (props: CarouselEditProps): ReactElement => {
           addLog(`Adding slide #${index + 1}: ID=${media.id}, Title="${titleText}"`);
           
           try {
-            wpGlobal.data.dispatch('divi/edit-post').addModule(
+            dataStore.dispatch('divi/edit-post').addModule(
               id,
               'cg/carousel-item',
               {
