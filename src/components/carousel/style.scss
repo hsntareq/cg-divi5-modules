@@ -1,0 +1,12 @@
+// Carousel Visual Builder Styles
+
+// Hide the gallery preview items for the bulk uploader field in the settings panel.
+// We target the field specifically by checking if it contains the input for galleryIds.
+.et-vb-field-upload-gallery:has(input[id*="galleryIds"]) .et-vb-field-upload-gallery--item-wrapper {
+  display: none !important;
+}
+
+// Adjust padding/spacing if needed when the list is hidden
+.et-vb-field-upload-gallery:has(input[id*="galleryIds"]) {
+  padding-bottom: 0 !important;
+}

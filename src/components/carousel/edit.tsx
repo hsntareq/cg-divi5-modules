@@ -141,39 +141,22 @@ export const CarouselEdit = (props: CarouselEditProps): ReactElement => {
     // 1. Reset parent's galleryIds attribute synchronously so it clears the settings uploader modal and prevents re-triggering
     addLog('Clearing uploader attribute via editModuleAttribute...');
     
-    // Clear root attribute
+    // Clear root attribute using single object argument format as required by Divi 5 dispatch action
     try {
-      dataStore.dispatch('divi/edit-post').editModuleAttribute(
+      dataStore.dispatch('divi/edit-post').editModuleAttribute({
         id,
-        'galleryIds',
-        {
+        attrName: 'galleryIds',
+        value: {
           innerContent: {
             desktop: {
               value: ''
             }
           }
         }
-      );
+      });
       addLog('Successfully cleared galleryIds root attribute.');
     } catch (e: any) {
       addLog(`Info: Failed to clear galleryIds root: ${e.message}`);
-    }
-
-    // Try to clear sub-path to cover any binding mismatches
-    try {
-      dataStore.dispatch('divi/edit-post').editModuleAttribute(
-        id,
-        'galleryIds.innerContent',
-        {
-          desktop: {
-            value: ''
-          }
-        }
-      );
-      addLog('Successfully cleared galleryIds.innerContent sub-path.');
-    } catch (e: any) {
-      // Safe to ignore or log since 'galleryIds' root clearing is the standard Divi 5 way
-      addLog(`Info: galleryIds.innerContent clear returned: ${e.message}`);
     }
 
     // 2. Fetch media details for these IDs using native fetch
