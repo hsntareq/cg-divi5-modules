@@ -111,21 +111,11 @@ export const CarouselEdit = (props: CarouselEditProps): ReactElement => {
       return info.join(' | ');
     };
 
-    const rawApiFetch = getWpDependency('apiFetch');
     const rawDataStore = getWpDependency('data');
 
     let dataStore: any = rawDataStore;
     if (dataStore && !dataStore.dispatch && dataStore.default?.dispatch) {
       dataStore = dataStore.default;
-    }
-
-    let apiFetch: any = rawApiFetch;
-    if (apiFetch && typeof apiFetch !== 'function') {
-      if (typeof apiFetch.default === 'function') {
-        apiFetch = apiFetch.default;
-      } else if (typeof apiFetch.apiFetch === 'function') {
-        apiFetch = apiFetch.apiFetch;
-      }
     }
 
     if (!dataStore || typeof dataStore.dispatch !== 'function') {
@@ -152,20 +142,10 @@ export const CarouselEdit = (props: CarouselEditProps): ReactElement => {
     addLog(`Parsed IDs to fetch: ${ids.join(', ')}`);
 
     // 1. Reset parent's galleryIds attribute synchronously so it clears the settings uploader modal and prevents re-triggering
+    addLog('Clearing uploader attribute via editModuleAttribute...');
+    
+    // Clear root attribute
     try {
-      addLog('Clearing uploader attribute via editModuleAttribute...');
-      
-      // Dispatch both sub-path and root attribute value updates to cover any binding mismatches
-      dataStore.dispatch('divi/edit-post').editModuleAttribute(
-        id,
-        'galleryIds.innerContent',
-        {
-          desktop: {
-            value: ''
-          }
-        }
-      );
-
       dataStore.dispatch('divi/edit-post').editModuleAttribute(
         id,
         'galleryIds',
@@ -177,20 +157,59 @@ export const CarouselEdit = (props: CarouselEditProps): ReactElement => {
           }
         }
       );
-      
-      addLog('Successfully dispatched cleared uploader attributes.');
+      addLog('Successfully cleared galleryIds root attribute.');
     } catch (e: any) {
-      addLog(`Failed to clear uploader attribute: ${e.message}`);
+      addLog(`Info: Failed to clear galleryIds root: ${e.message}`);
     }
 
-    if (typeof apiFetch !== 'function') {
-      addLog(`wp.apiFetch not found or invalid (resolved: ${typeof rawApiFetch}). Globals: ${debugInspect()}`);
-      return;
+    // Try to clear sub-path to cover any binding mismatches
+    try {
+      dataStore.dispatch('divi/edit-post').editModuleAttribute(
+        id,
+        'galleryIds.innerContent',
+        {
+          desktop: {
+            value: ''
+          }
+        }
+      );
+      addLog('Successfully cleared galleryIds.innerContent sub-path.');
+    } catch (e: any) {
+      // Safe to ignore or log since 'galleryIds' root clearing is the standard Divi 5 way
+      addLog(`Info: galleryIds.innerContent clear returned: ${e.message}`);
     }
 
-    // 2. Fetch media details for these IDs using WordPress apiFetch
-    addLog('Fetching media details from WP REST API...');
-    apiFetch({ path: `/wp/v2/media?include=${ids.join(',')}` })
+    // 2. Fetch media details for these IDs using native fetch
+    let restRoot = '';
+    const winContexts = [window, window.parent, window.top];
+    for (const ctx of winContexts) {
+      try {
+        if (ctx && (ctx as any).wpApiSettings?.root) {
+          restRoot = (ctx as any).wpApiSettings.root;
+          break;
+        }
+      } catch (e) {}
+    }
+    if (!restRoot) {
+      restRoot = '/wp-json/';
+    }
+
+    const fetchUrl = `${restRoot}wp/v2/media?include=${ids.join(',')}`;
+    addLog(`Fetching media details from WP REST API: ${fetchUrl}`);
+
+    window.fetch(fetchUrl)
+      .then(response => {
+        if (!response.ok) {
+          return response.text().then(text => {
+            throw new Error(`HTTP ${response.status}: ${text.substring(0, 100)}`);
+          });
+        }
+        return response.json().catch(() => {
+          return response.text().then(text => {
+            throw new Error(`Invalid JSON response: ${text.substring(0, 100)}`);
+          });
+        });
+      })
       .then((mediaList: any[]) => {
         addLog(`Successfully fetched ${mediaList ? mediaList.length : 0} media items`);
         if (!mediaList || mediaList.length === 0) {
