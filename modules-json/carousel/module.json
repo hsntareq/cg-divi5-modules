@@ -367,6 +367,7 @@
         "innerContent": {
           "groupType": "group-item",
           "item": {
+            "groupSlug": "addMultipleItemsGroup",
             "groupName": "mainContent",
             "attrName": "galleryIds.innerContent",
             "priority": 5,
@@ -387,6 +388,17 @@
     "design": "auto",
     "advanced": "auto",
     "groups": {
+      "addMultipleItemsGroup": {
+        "panel": "content",
+        "priority": 5,
+        "groupName": "mainContent",
+        "component": {
+          "name": "divi/composite",
+          "props": {
+            "groupLabel": "Add Multiple Items"
+          }
+        }
+      },
       "sliderSettingsGroup": {
         "panel": "content",
         "priority": 10,
