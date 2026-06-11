@@ -124,29 +124,6 @@ export const CarouselEdit = (props: CarouselEditProps): ReactElement => {
     if (isFirstRun.current) {
       isFirstRun.current = false;
       addLog('Skipping initial run of galleryIdsVal listener to prevent duplication on mount/refresh');
-      // Proactively clear the galleryIds in the editor store on mount as well so it doesn't get saved
-      try {
-        dataStore.dispatch('divi/edit-post').editModuleAttribute({
-          id,
-          attrName: 'galleryIds',
-          value: {
-            innerContent: {
-              desktop: {
-                value: ''
-              }
-            }
-          }
-        });
-        dataStore.dispatch('divi/edit-post').editModuleAttribute({
-          id,
-          attrName: 'galleryIds.innerContent',
-          value: {
-            desktop: {
-              value: ''
-            }
-          }
-        });
-      } catch (e) {}
       return;
     }
 
