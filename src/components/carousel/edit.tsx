@@ -35,6 +35,17 @@ export const CarouselEdit = (props: CarouselEditProps): ReactElement => {
       return;
     }
 
+    // Reset the parent's galleryIds attribute synchronously so it updates settings modal and doesn't trigger again
+    wpGlobal.data.dispatch('core/block-editor').updateBlockAttributes(id, {
+      galleryIds: {
+        innerContent: {
+          desktop: {
+            value: ''
+          }
+        }
+      }
+    });
+
     // Fetch media details from WP REST API
     wpGlobal.apiFetch({ path: `/wp/v2/media?include=${ids.join(',')}` })
       .then((mediaList: any[]) => {
@@ -53,7 +64,7 @@ export const CarouselEdit = (props: CarouselEditProps): ReactElement => {
                 desktop: {
                   value: {
                     src: media.source_url || '',
-                    id: media.id,
+                    id: String(media.id),
                     alt: media.alt_text || '',
                     titleText: titleText
                   }
@@ -72,17 +83,6 @@ export const CarouselEdit = (props: CarouselEditProps): ReactElement => {
 
         // Append child blocks to the parent carousel block
         wpGlobal.data.dispatch('core/block-editor').insertBlocks(blocks, undefined, id);
-
-        // Reset the parent's galleryIds attribute so it doesn't trigger again
-        wpGlobal.data.dispatch('core/block-editor').updateBlockAttributes(id, {
-          galleryIds: {
-            innerContent: {
-              desktop: {
-                value: ''
-              }
-            }
-          }
-        });
       })
       .catch((err: any) => {
         console.error('Error auto-creating carousel items from gallery:', err);
