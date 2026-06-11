@@ -30,17 +30,36 @@ export const CarouselEdit = (props: CarouselEditProps): ReactElement => {
   useEffect(() => {
     const getWpDependency = (key: string) => {
       if (typeof window !== 'undefined') {
-        const targets = [window, window.parent, window.top];
-        for (const target of targets) {
-          try {
-            if (!target) continue;
-            const t = target as any;
-            if (t.wp?.[key]) return t.wp[key];
-            if (t.vendor?.wp?.[key]) return t.vendor.wp[key];
-            if (t.divi?.[key]) return t.divi[key];
-            if (t.vendor?.divi?.[key]) return t.vendor.divi[key];
-          } catch (e) {}
-        }
+        // 1. Check local window context
+        try {
+          const t = window as any;
+          if (t.wp?.[key]) return t.wp[key];
+          if (t.vendor?.wp?.[key]) return t.vendor.wp[key];
+          if (t.divi?.[key]) return t.divi[key];
+          if (t.vendor?.divi?.[key]) return t.vendor.divi[key];
+        } catch (e) {}
+
+        // 2. Check parent window context
+        try {
+          const p = window.parent as any;
+          if (p) {
+            if (p.wp?.[key]) return p.wp[key];
+            if (p.vendor?.wp?.[key]) return p.vendor.wp[key];
+            if (p.divi?.[key]) return p.divi[key];
+            if (p.vendor?.divi?.[key]) return p.vendor.divi[key];
+          }
+        } catch (e) {}
+
+        // 3. Check top window context
+        try {
+          const top = window.top as any;
+          if (top) {
+            if (top.wp?.[key]) return top.wp[key];
+            if (top.vendor?.wp?.[key]) return top.vendor.wp[key];
+            if (top.divi?.[key]) return top.divi[key];
+            if (top.vendor?.divi?.[key]) return top.vendor.divi[key];
+          }
+        } catch (e) {}
       }
       return null;
     };
@@ -48,23 +67,46 @@ export const CarouselEdit = (props: CarouselEditProps): ReactElement => {
     const debugInspect = () => {
       const info: string[] = [];
       if (typeof window !== 'undefined') {
-        const contexts = [
-          { name: 'window', obj: window },
-          { name: 'parent', obj: window.parent },
-          { name: 'top', obj: window.top },
-        ];
-        contexts.forEach(ctx => {
-          try {
-            if (!ctx.obj) return;
-            const t = ctx.obj as any;
-            info.push(`${ctx.name}.wp: ${typeof t.wp}`);
-            info.push(`${ctx.name}.vendor.wp: ${typeof t.vendor?.wp}`);
-            info.push(`${ctx.name}.divi: ${typeof t.divi}`);
-            info.push(`${ctx.name}.vendor.divi: ${typeof t.vendor?.divi}`);
-          } catch (e) {
-            info.push(`${ctx.name}.err: cross-origin`);
+        // window
+        try {
+          const t = window as any;
+          info.push(`window.wp: ${typeof t.wp}`);
+          info.push(`window.vendor.wp: ${typeof t.vendor?.wp}`);
+          info.push(`window.divi: ${typeof t.divi}`);
+          info.push(`window.vendor.divi: ${typeof t.vendor?.divi}`);
+        } catch (e: any) {
+          info.push(`window.err: ${e.message || 'security'}`);
+        }
+
+        // parent
+        try {
+          const p = window.parent as any;
+          if (p) {
+            info.push(`parent.wp: ${typeof p.wp}`);
+            info.push(`parent.vendor.wp: ${typeof p.vendor?.wp}`);
+            info.push(`parent.divi: ${typeof p.divi}`);
+            info.push(`parent.vendor.divi: ${typeof p.vendor?.divi}`);
+          } else {
+            info.push(`parent: null`);
           }
-        });
+        } catch (e: any) {
+          info.push(`parent.err: ${e.message || 'security'}`);
+        }
+
+        // top
+        try {
+          const top = window.top as any;
+          if (top) {
+            info.push(`top.wp: ${typeof top.wp}`);
+            info.push(`top.vendor.wp: ${typeof top.vendor?.wp}`);
+            info.push(`top.divi: ${typeof top.divi}`);
+            info.push(`top.vendor.divi: ${typeof top.vendor?.divi}`);
+          } else {
+            info.push(`top: null`);
+          }
+        } catch (e: any) {
+          info.push(`top.err: ${e.message || 'security'}`);
+        }
       }
       return info.join(' | ');
     };
