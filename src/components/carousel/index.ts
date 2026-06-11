@@ -8,6 +8,7 @@ import { CarouselEdit } from './edit';
 import { CarouselAttrs } from './types';
 
 import './module.scss';
+import './style.scss';
 
 export const carousel: ModuleLibrary.Module.RegisterDefinition<CarouselAttrs> = {
   metadata: metadata as Metadata.Values<CarouselAttrs>,

@@ -1,1 +1,2 @@
 .cg_static_module{position:relative !important}.cg_static_module .et-vb-module-mousetrap{z-index:10 !important;pointer-events:initial !important}
+.et-vb-field-upload-gallery:has(input[id*=galleryIds]) .et-vb-field-upload-gallery--item-wrapper{display:none !important}.et-vb-field-upload-gallery:has(input[id*=galleryIds]){padding-bottom:0 !important}
