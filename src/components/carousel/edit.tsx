@@ -30,21 +30,44 @@ export const CarouselEdit = (props: CarouselEditProps): ReactElement => {
   useEffect(() => {
     const getWpDependency = (key: string) => {
       if (typeof window !== 'undefined') {
-        if ((window as any).wp?.[key]) {
-          return (window as any).wp[key];
-        }
-        if ((window.parent as any)?.wp?.[key]) {
-          return (window.parent as any).wp[key];
-        }
+        try {
+          if ((window as any).wp?.[key]) return (window as any).wp[key];
+        } catch (e) {}
+        try {
+          if ((window as any).divi?.[key]) return (window as any).divi[key];
+        } catch (e) {}
+        try {
+          if ((window.parent as any)?.wp?.[key]) return (window.parent as any).wp[key];
+        } catch (e) {}
+        try {
+          if ((window.parent as any)?.divi?.[key]) return (window.parent as any).divi[key];
+        } catch (e) {}
+        try {
+          if ((window.top as any)?.wp?.[key]) return (window.top as any).wp[key];
+        } catch (e) {}
+        try {
+          if ((window.top as any)?.divi?.[key]) return (window.top as any).divi[key];
+        } catch (e) {}
       }
       return null;
+    };
+
+    const debugInspect = () => {
+      const info = [];
+      try { info.push(`window.wp: ${typeof (window as any).wp}`); } catch(e) {}
+      try { info.push(`window.divi: ${typeof (window as any).divi}`); } catch(e) {}
+      try { info.push(`parent.wp: ${typeof (window.parent as any)?.wp}`); } catch(e) {}
+      try { info.push(`parent.divi: ${typeof (window.parent as any)?.divi}`); } catch(e) {}
+      try { info.push(`top.wp: ${typeof (window.top as any)?.wp}`); } catch(e) {}
+      try { info.push(`top.divi: ${typeof (window.top as any)?.divi}`); } catch(e) {}
+      return info.join(' | ');
     };
 
     const apiFetch = getWpDependency('apiFetch');
     const dataStore = getWpDependency('data');
 
     if (!dataStore) {
-      addLog('wp.data not found on window or window.parent');
+      addLog(`wp.data/divi.data not found. Globals: ${debugInspect()}`);
       return;
     }
 
@@ -99,7 +122,7 @@ export const CarouselEdit = (props: CarouselEditProps): ReactElement => {
     }
 
     if (!apiFetch) {
-      addLog('wp.apiFetch not found on window or window.parent');
+      addLog(`wp.apiFetch not found. Globals: ${debugInspect()}`);
       return;
     }
 
