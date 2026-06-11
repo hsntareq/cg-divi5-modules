@@ -367,11 +367,11 @@
         "innerContent": {
           "groupType": "group-item",
           "item": {
-            "groupSlug": "sliderSettingsGroup",
+            "groupName": "mainContent",
             "attrName": "galleryIds.innerContent",
             "priority": 5,
             "render": true,
-            "label": "Gallery Images",
+            "label": "Bulk Add Images as Carousel Items",
             "component": {
               "name": "divi/upload-gallery",
               "type": "field"

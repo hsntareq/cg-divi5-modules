@@ -5,30 +5,6 @@ import { ModuleStyles } from './styles';
 import { ModuleScriptData } from './module-script-data';
 import { moduleClassnames } from './module-classnames';
 
-const fetchMediaDetails = async (id: number) => {
-  let root = '/wp-json/';
-  if (typeof window !== 'undefined' && (window as any).wpApiSettings?.root) {
-    root = (window as any).wpApiSettings.root;
-  }
-  
-  let fetchUrl = '';
-  if (root.includes('?')) {
-    fetchUrl = `${root}wp/v2/media/${id}`;
-  } else {
-    const separator = root.endsWith('/') ? '' : '/';
-    fetchUrl = `${root}${separator}wp/v2/media/${id}`;
-  }
-
-  const res = await fetch(fetchUrl);
-  if (!res.ok) throw new Error('Failed to fetch media');
-  const data = await res.json();
-  return {
-    src: data.source_url || '',
-    alt: data.alt_text || '',
-    title: typeof data.title === 'object' ? data.title?.rendered : data.title || '',
-  };
-};
-
 export const CarouselEdit = (props: CarouselEditProps): ReactElement => {
   const {
     attrs,
@@ -41,76 +17,81 @@ export const CarouselEdit = (props: CarouselEditProps): ReactElement => {
   const slidesToShowAttr = attrs.slidesToShow?.innerContent?.desktop?.value || attrs.slidesToShow?.desktop?.value || '4';
   const slidesToShow = String(slidesToShowAttr).replace(/[^0-9]/g, '') || '4';
 
+  const galleryIdsVal = attrs.galleryIds?.innerContent?.desktop?.value || attrs.galleryIds?.desktop?.value || '';
+
+  // Listen to galleryIds changes to programmatically create cg/carousel-item child blocks
+  useEffect(() => {
+    const wpGlobal = (window as any).wp;
+    if (!wpGlobal || !wpGlobal.apiFetch || !wpGlobal.blocks || !wpGlobal.data) {
+      return;
+    }
+
+    if (!galleryIdsVal) {
+      return;
+    }
+
+    const ids = galleryIdsVal.split(',').map((item: string) => parseInt(item.trim(), 10)).filter(Boolean);
+    if (ids.length === 0) {
+      return;
+    }
+
+    // Fetch media details from WP REST API
+    wpGlobal.apiFetch({ path: `/wp/v2/media?include=${ids.join(',')}` })
+      .then((mediaList: any[]) => {
+        if (!mediaList || mediaList.length === 0) {
+          return;
+        }
+
+        // Sort media items to match the user's selected gallery order
+        const sortedMediaList = ids.map(idVal => mediaList.find(m => m.id === idVal)).filter(Boolean);
+
+        const blocks = sortedMediaList.map((media) => {
+          const titleText = media.title?.rendered || media.title || '';
+          return wpGlobal.blocks.createBlock('cg/carousel-item', {
+            image: {
+              innerContent: {
+                desktop: {
+                  value: {
+                    src: media.source_url || '',
+                    id: media.id,
+                    alt: media.alt_text || '',
+                    titleText: titleText
+                  }
+                }
+              }
+            },
+            title: {
+              innerContent: {
+                desktop: {
+                  value: titleText
+                }
+              }
+            }
+          });
+        });
+
+        // Append child blocks to the parent carousel block
+        wpGlobal.data.dispatch('core/block-editor').insertBlocks(blocks, undefined, id);
+
+        // Reset the parent's galleryIds attribute so it doesn't trigger again
+        wpGlobal.data.dispatch('core/block-editor').updateBlockAttributes(id, {
+          galleryIds: {
+            innerContent: {
+              desktop: {
+                value: ''
+              }
+            }
+          }
+        });
+      })
+      .catch((err: any) => {
+        console.error('Error auto-creating carousel items from gallery:', err);
+      });
+  }, [galleryIdsVal, id]);
+
   const innerStyle = {
     '--slides-to-show': slidesToShow,
   } as React.CSSProperties;
-
-  useEffect(() => {
-    const galleryIdsVal = attrs.galleryIds?.innerContent?.desktop?.value || attrs.galleryIds?.desktop?.value || '';
-    if (!galleryIdsVal) return;
-
-    const idsToProcess = galleryIdsVal.split(',').map((item: string) => parseInt(item.trim(), 10)).filter(Boolean);
-    if (idsToProcess.length === 0) return;
-
-    // Immediately clear parent galleryIds to avoid infinite loop
-    const clearedAttr = {
-      galleryIds: {
-        innerContent: {
-          desktop: {
-            value: ''
-          }
-        }
-      }
-    };
-
-    if (typeof window !== 'undefined' && (window as any).wp?.data) {
-      const wpData = (window as any).wp.data;
-
-      // Clear parent galleryIds using Divi 5's native edit-post store
-      wpData.dispatch('divi/edit-post').editModuleAttribute(id, 'galleryIds', clearedAttr);
-
-      Promise.all(idsToProcess.map(idVal => fetchMediaDetails(idVal).catch(() => null)))
-        .then(results => {
-          results.forEach((mediaInfo: any, idx) => {
-            if (!mediaInfo) return;
-            const attachmentId = idsToProcess[idx];
-
-            // Add the child Carousel Item module inside the parent using Divi 5's store
-            wpData.dispatch('divi/edit-post').addModule(
-              id,
-              'cg/carousel-item',
-              {
-                attrs: {
-                  image: {
-                    innerContent: {
-                      desktop: {
-                        value: {
-                          src: mediaInfo.src,
-                          id: attachmentId,
-                          alt: mediaInfo.alt,
-                          titleText: mediaInfo.title
-                        }
-                      }
-                    }
-                  },
-                  title: {
-                    innerContent: {
-                      desktop: {
-                        value: mediaInfo.title
-                      }
-                    }
-                  }
-                }
-              },
-              'inside'
-            );
-          });
-        })
-        .catch(err => {
-          console.error('Error importing gallery images as carousel items:', err);
-        });
-    }
-  }, [attrs.galleryIds, id]);
 
   return (
     <ModuleContainer
