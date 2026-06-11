@@ -1,4 +1,4 @@
-import React, { ReactElement, useEffect, useState } from 'react';
+import React, { ReactElement, useEffect } from 'react';
 import { ChildModulesContainer, ModuleContainer } from '@divi/module';
 import { CarouselEditProps } from './types';
 import { ModuleStyles } from './styles';
@@ -14,10 +14,7 @@ export const CarouselEdit = (props: CarouselEditProps): ReactElement => {
     childrenIds,
   } = props;
 
-  const [logs, setLogs] = useState<string[]>([]);
-  
   const addLog = (msg: string) => {
-    setLogs(prev => [...prev, `${new Date().toLocaleTimeString()}: ${msg}`]);
     console.log(`[Carousel VB Log] ${msg}`);
   };
 
@@ -294,37 +291,6 @@ export const CarouselEdit = (props: CarouselEditProps): ReactElement => {
             <ChildModulesContainer ids={childrenIds} />
           </div>
         </div>
-      </div>
-
-      {/* On-screen diagnostic logs for debugging Visual Builder action dispatchers */}
-      <div className="cg-diagnostic-box" style={{
-        background: 'rgba(255, 255, 255, 0.95)',
-        color: '#000',
-        padding: '15px',
-        fontSize: '12px',
-        fontFamily: 'monospace',
-        borderRadius: '6px',
-        margin: '20px auto 10px auto',
-        border: '2px solid #ff4a4a',
-        maxWidth: '600px',
-        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-        zIndex: 99999,
-        position: 'relative',
-        textAlign: 'left'
-      }}>
-        <strong style={{ color: '#d00', fontSize: '13px' }}>⚙️ Carousel Diagnostic Monitor:</strong>
-        <div style={{ marginTop: '5px', fontSize: '10px', color: '#666' }}>
-          <strong>Parent ID:</strong> {id} | <strong>Slides Count:</strong> {childrenIds ? childrenIds.length : 0} | <strong>Uploader Raw:</strong> "{galleryIdsVal}"
-        </div>
-        <ul style={{ margin: '8px 0 0 0', paddingLeft: '20px', lineHeight: '1.4' }}>
-          {logs.length === 0 ? (
-            <li style={{ color: '#777', listStyleType: 'none', marginLeft: '-20px' }}>No actions triggered yet. Select images in settings uploader to start.</li>
-          ) : (
-            logs.map((log, idx) => (
-              <li key={idx}>{log}</li>
-            ))
-          )}
-        </ul>
       </div>
     </ModuleContainer>
   );
