@@ -38,7 +38,7 @@ trait RenderCallbackTrait {
 		) : [];
 
 		$parent       = BlockParserStore::get_parent( $block->parsed_block['id'], $block->parsed_block['storeInstance'] );
-		$parent_attrs = $parent->attrs ?? [];
+		$parent_attrs = $parent ? ( $parent->attrs ?? [] ) : [];
 
 		// Read slider settings.
 		$autoplay         = self::get_attribute_value( $attrs, 'autoplay', 'off' );
@@ -126,8 +126,8 @@ trait RenderCallbackTrait {
 				'stylesComponent'     => [ Carousel::class, 'module_styles' ],
 				'scriptDataComponent' => [ Carousel::class, 'module_script_data' ],
 				'parentAttrs'         => $parent_attrs,
-				'parentId'            => $parent->id ?? '',
-				'parentName'          => $parent->blockName ?? '',
+				'parentId'            => $parent ? ( $parent->id ?? '' ) : '',
+				'parentName'          => $parent ? ( $parent->blockName ?? '' ) : '',
 				'children'            => [
 					ElementComponents::component(
 						[

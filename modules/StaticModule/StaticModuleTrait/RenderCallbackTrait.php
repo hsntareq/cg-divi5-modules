@@ -103,7 +103,7 @@ trait RenderCallbackTrait {
 		);
 
 		$parent       = BlockParserStore::get_parent( $block->parsed_block['id'], $block->parsed_block['storeInstance'] );
-		$parent_attrs = $parent->attrs ?? [];
+		$parent_attrs = $parent ? ( $parent->attrs ?? [] ) : [];
 
 		return Module::render(
 			[
@@ -121,8 +121,8 @@ trait RenderCallbackTrait {
 				'stylesComponent'     => [ StaticModule::class, 'module_styles' ],
 				'scriptDataComponent' => [ StaticModule::class, 'module_script_data' ],
 				'parentAttrs'         => $parent_attrs,
-				'parentId'            => $parent->id ?? '',
-				'parentName'          => $parent->blockName ?? '',
+				'parentId'            => $parent ? ( $parent->id ?? '' ) : '',
+				'parentName'          => $parent ? ( $parent->blockName ?? '' ) : '',
 				'children'            => [
 					ElementComponents::component(
 						[
