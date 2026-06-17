@@ -16,6 +16,7 @@ use CG\Divi5Modules\StaticModule\StaticModule;
 use CG\Divi5Modules\Carousel\Carousel;
 use CG\Divi5Modules\CarouselItem\CarouselItem;
 use CG\Divi5Modules\TextMarquee\TextMarquee;
+use CG\Divi5Modules\PortfolioPB\PortfolioPB;
 
 add_action(
 	'divi_module_library_modules_dependency_tree',
@@ -24,5 +25,6 @@ add_action(
 		$dependency_tree->add_dependency( new Carousel() );
 		$dependency_tree->add_dependency( new CarouselItem() );
 		$dependency_tree->add_dependency( new TextMarquee() );
+		$dependency_tree->add_dependency( new PortfolioPB() );
 	}
 );

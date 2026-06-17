@@ -98,3 +98,87 @@ function cg_divi5_modules_enqueue_frontend_scripts() {
 	wp_enqueue_script( 'cg-divi5-modules-frontend-script', "{$plugin_dir_url}scripts/frontend.js", array(), $js_version, true );
 }
 add_action( 'wp_enqueue_scripts', 'cg_divi5_modules_enqueue_frontend_scripts' );
+
+/**
+ * Register post meta for Portfolio PB Module layout sizing.
+ */
+function cg_portfolio_register_post_meta() {
+	register_post_meta(
+		'post',
+		'portfolio_pb_size',
+		[
+			'show_in_rest' => true,
+			'single'       => true,
+			'type'         => 'string',
+		]
+	);
+	register_post_meta(
+		'project',
+		'portfolio_pb_size',
+		[
+			'show_in_rest' => true,
+			'single'       => true,
+			'type'         => 'string',
+		]
+	);
+}
+add_action( 'init', 'cg_portfolio_register_post_meta' );
+
+/**
+ * Add meta box to post and project edit screens.
+ */
+function cg_portfolio_pb_add_meta_box() {
+	$screens = [ 'post', 'project' ];
+	foreach ( $screens as $screen ) {
+		add_meta_box(
+			'cg_portfolio_pb_size_box',
+			'Portfolio Grid Size',
+			'cg_portfolio_pb_size_box_callback',
+			$screen,
+			'side',
+			'default'
+		);
+	}
+}
+add_action( 'add_meta_boxes', 'cg_portfolio_pb_add_meta_box' );
+
+/**
+ * Render metabox dropdown.
+ */
+function cg_portfolio_pb_size_box_callback( $post ) {
+	wp_nonce_field( 'cg_portfolio_pb_save_size', 'cg_portfolio_pb_size_nonce' );
+	$value = get_post_meta( $post->ID, 'portfolio_pb_size', true );
+	if ( empty( $value ) ) {
+		$value = 'regular';
+	}
+	?>
+	<select name="portfolio_pb_size_field" style="width: 100%; padding: 6px; border: 1px solid #ccc; border-radius: 4px;">
+		<option value="regular" <?php selected( $value, 'regular' ); ?>>Regular (1x1)</option>
+		<option value="2x1" <?php selected( $value, '2x1' ); ?>>2x Width (2x1)</option>
+		<option value="2x2" <?php selected( $value, '2x2' ); ?>>2x Width & Height (2x2)</option>
+		<option value="1x2" <?php selected( $value, '1x2' ); ?>>2x Height (1x2)</option>
+	</select>
+	<?php
+}
+
+/**
+ * Save metabox selection.
+ */
+function cg_portfolio_pb_save_size_data( $post_id ) {
+	if ( ! isset( $_POST['cg_portfolio_pb_size_nonce'] ) ) {
+		return;
+	}
+	if ( ! wp_verify_nonce( $_POST['cg_portfolio_pb_size_nonce'], 'cg_portfolio_pb_save_size' ) ) {
+		return;
+	}
+	if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
+		return;
+	}
+	if ( ! current_user_can( 'edit_post', $post_id ) ) {
+		return;
+	}
+	if ( isset( $_POST['portfolio_pb_size_field'] ) ) {
+		update_post_meta( $post_id, 'portfolio_pb_size', sanitize_text_field( $_POST['portfolio_pb_size_field'] ) );
+	}
+}
+add_action( 'save_post', 'cg_portfolio_pb_save_size_data' );

@@ -1,0 +1,67 @@
+{
+  "module": {
+    "meta": {
+      "adminLabel": {
+        "desktop": {
+          "value": "Portfolio PB"
+        }
+      }
+    }
+  },
+  "postType": {
+    "innerContent": {
+      "desktop": {
+        "value": "post"
+      }
+    }
+  },
+  "postsNumber": {
+    "innerContent": {
+      "desktop": {
+        "value": "12"
+      }
+    }
+  },
+  "gridColumns": {
+    "innerContent": {
+      "desktop": {
+        "value": "3"
+      }
+    }
+  },
+  "hideEmptySubcats": {
+    "innerContent": {
+      "desktop": {
+        "value": "off"
+      }
+    }
+  },
+  "directSubcatLabel": {
+    "innerContent": {
+      "desktop": {
+        "value": "parent"
+      }
+    }
+  },
+  "showLoadMore": {
+    "innerContent": {
+      "desktop": {
+        "value": "on"
+      }
+    }
+  },
+  "loadMoreText": {
+    "innerContent": {
+      "desktop": {
+        "value": "Load More"
+      }
+    }
+  },
+  "activeColor": {
+    "innerContent": {
+      "desktop": {
+        "value": "#7e22ce"
+      }
+    }
+  }
+}

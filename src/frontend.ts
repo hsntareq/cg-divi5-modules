@@ -255,8 +255,199 @@ const initCarousel = () => {
   });
 };
 
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initCarousel);
-} else {
+const initPortfolioPB = () => {
+  const wrappers = document.querySelectorAll('.cg_portfolio_pb__wrapper');
+
+  wrappers.forEach((wrapper) => {
+    const tabs = wrapper.querySelectorAll('.cg_portfolio_pb__tab');
+    const radiosContainers = wrapper.querySelectorAll('.cg_portfolio_pb__radios-container');
+    const grid = wrapper.querySelector('.cg_portfolio_pb__grid');
+    const cards = wrapper.querySelectorAll('.cg_portfolio_pb__card');
+    const loadMoreContainer = wrapper.querySelector('.cg_portfolio_pb__load-more-container') as HTMLElement;
+    const loadMoreBtn = wrapper.querySelector('.cg_portfolio_pb__load-more-btn') as HTMLElement;
+
+    if (!grid) return;
+
+    const postsLimit = parseInt(grid.getAttribute('data-posts-limit') || '12', 10);
+    let currentLimit = postsLimit;
+
+    // Helper function to update active/visible cards
+    const filterCards = (activeCatId: string, activeSubcatId: string | null) => {
+      grid.classList.add('filtering');
+
+      setTimeout(() => {
+        let matchedCount = 0;
+
+        cards.forEach((cardNode) => {
+          const card = cardNode as HTMLElement;
+          const categoriesAttr = card.getAttribute('data-categories') || '';
+          const postCats = categoriesAttr.split(',').filter(Boolean);
+
+          let matchesCat = activeCatId === 'all';
+          let matchesSubcat = !activeSubcatId || activeSubcatId === 'all';
+
+          if (activeCatId !== 'all') {
+            matchesCat = postCats.includes(activeCatId);
+            if (matchesCat && activeSubcatId && activeSubcatId !== 'all') {
+              if (activeSubcatId === 'direct') {
+                const container = wrapper.querySelector(`.cg_portfolio_pb__radios-container[data-parent-cat-id="${activeCatId}"]`);
+                if (container) {
+                  const childIds = Array.from(container.querySelectorAll('input[type="radio"]'))
+                    .map(input => (input as HTMLInputElement).value)
+                    .filter(val => val !== 'all' && val !== 'direct');
+                  matchesSubcat = !childIds.some(childId => postCats.includes(childId));
+                } else {
+                  matchesSubcat = true;
+                }
+              } else {
+                matchesSubcat = postCats.includes(activeSubcatId);
+              }
+            }
+          }
+
+          if (matchesCat && matchesSubcat) {
+            matchedCount++;
+            if (matchedCount <= currentLimit) {
+              card.style.display = 'block';
+            } else {
+              card.style.display = 'none';
+            }
+          } else {
+            card.style.display = 'none';
+          }
+        });
+
+        // Toggle load more button visibility
+        if (loadMoreContainer) {
+          if (matchedCount > currentLimit) {
+            loadMoreContainer.style.display = 'flex';
+          } else {
+            loadMoreContainer.style.display = 'none';
+          }
+        }
+
+        // Toggle empty grid state
+        let emptyMsg = grid.querySelector('.cg_portfolio_pb__empty') as HTMLElement;
+        if (matchedCount === 0) {
+          if (!emptyMsg) {
+            emptyMsg = document.createElement('div');
+            emptyMsg.className = 'cg_portfolio_pb__empty';
+            emptyMsg.textContent = 'No items found for the selected filters.';
+            grid.appendChild(emptyMsg);
+          } else {
+            emptyMsg.style.display = 'block';
+          }
+        } else if (emptyMsg) {
+          emptyMsg.style.display = 'none';
+        }
+
+        grid.classList.remove('filtering');
+      }, 150);
+    };
+
+    // Click tabs logic
+    tabs.forEach((tabNode) => {
+      const tab = tabNode as HTMLElement;
+      tab.addEventListener('click', () => {
+        // Update active tab style
+        tabs.forEach((t) => t.classList.remove('active'));
+        tab.classList.add('active');
+
+        const catId = tab.getAttribute('data-cat-id') || 'all';
+
+        // Toggle subcategory radios visibility
+        radiosContainers.forEach((containerNode) => {
+          const container = containerNode as HTMLElement;
+          const parentId = container.getAttribute('data-parent-cat-id');
+
+          if (parentId === catId) {
+            container.style.display = 'flex';
+            // Reset checked pill to "All"
+            const radioPills = container.querySelectorAll('.cg_portfolio_pb__radio-pill');
+            radioPills.forEach((pill, idx) => {
+              const radioInput = pill.querySelector('input[type="radio"]') as HTMLInputElement;
+              if (idx === 0) {
+                pill.classList.add('checked');
+                if (radioInput) radioInput.checked = true;
+              } else {
+                pill.classList.remove('checked');
+                if (radioInput) radioInput.checked = false;
+              }
+            });
+          } else {
+            container.style.display = 'none';
+          }
+        });
+
+        // Reset limit and filter cards
+        currentLimit = postsLimit;
+        filterCards(catId, 'all');
+      });
+    });
+
+    // Subcategory radio toggle logic
+    radiosContainers.forEach((containerNode) => {
+      const container = containerNode as HTMLElement;
+      const radioPills = container.querySelectorAll('.cg_portfolio_pb__radio-pill');
+
+      radioPills.forEach((pillNode) => {
+        const pill = pillNode as HTMLElement;
+        const radio = pill.querySelector('input[type="radio"]') as HTMLInputElement;
+
+        if (radio) {
+          radio.addEventListener('change', () => {
+            // Update active styling of pills in this container
+            radioPills.forEach((p) => p.classList.remove('checked'));
+            if (radio.checked) {
+              pill.classList.add('checked');
+            }
+
+            const subcatId = radio.value;
+            // Find current active category
+            const activeTab = wrapper.querySelector('.cg_portfolio_pb__tab.active') as HTMLElement;
+            const activeCatId = activeTab ? (activeTab.getAttribute('data-cat-id') || 'all') : 'all';
+
+            // Reset limit and filter
+            currentLimit = postsLimit;
+            filterCards(activeCatId, subcatId);
+          });
+        }
+      });
+    });
+
+    // Load more button logic
+    if (loadMoreBtn) {
+      loadMoreBtn.addEventListener('click', () => {
+        currentLimit += postsLimit;
+        
+        // Find current active category and subcategory
+        const activeTab = wrapper.querySelector('.cg_portfolio_pb__tab.active') as HTMLElement;
+        const activeCatId = activeTab ? (activeTab.getAttribute('data-cat-id') || 'all') : 'all';
+
+        let activeSubcatId: string | null = null;
+        if (activeCatId !== 'all') {
+          const container = wrapper.querySelector(`.cg_portfolio_pb__radios-container[data-parent-cat-id="${activeCatId}"]`);
+          if (container) {
+            const checkedInput = container.querySelector('input[type="radio"]:checked') as HTMLInputElement;
+            if (checkedInput) {
+              activeSubcatId = checkedInput.value;
+            }
+          }
+        }
+
+        filterCards(activeCatId, activeSubcatId);
+      });
+    }
+  });
+};
+
+const initAll = () => {
   initCarousel();
+  initPortfolioPB();
+};
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initAll);
+} else {
+  initAll();
 }
