@@ -167,25 +167,25 @@
 .cg_portfolio_pb__card--regular {
   grid-column: span 1;
   grid-row: span 1;
-  aspect-ratio: 1 / 1;
+  aspect-ratio: 4 / 3;
 }
 
 .cg_portfolio_pb__card--2x1 {
   grid-column: span 2;
   grid-row: span 1;
-  aspect-ratio: 2 / 1;
+  aspect-ratio: 8 / 3;
 }
 
 .cg_portfolio_pb__card--2x2 {
   grid-column: span 2;
   grid-row: span 2;
-  aspect-ratio: 1 / 1;
+  aspect-ratio: 4 / 3;
 }
 
 .cg_portfolio_pb__card--1x2 {
   grid-column: span 1;
   grid-row: span 2;
-  aspect-ratio: 1 / 2;
+  aspect-ratio: 2 / 3;
 }
 
 .cg_portfolio_pb__thumbnail-wrapper {
