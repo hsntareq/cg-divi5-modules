@@ -113,6 +113,11 @@ export interface PortfolioPBAttrs extends InternalAttrs {
       };
     };
   };
+
+  titleText?: Element.Types.Title.Attributes;
+  tabText?: Element.Types.Title.Attributes;
+  radioPillText?: Element.Types.Title.Attributes;
+  loadMoreBtn?: Element.Types.Title.Attributes;
 }
 
 export type PortfolioPBEditProps = ModuleEditProps<PortfolioPBAttrs>;

@@ -30,6 +30,22 @@ export const ModuleStyles = ({
         },
       })}
 
+      {elements.style({
+        attrName: 'titleText',
+      })}
+
+      {elements.style({
+        attrName: 'tabText',
+      })}
+
+      {elements.style({
+        attrName: 'radioPillText',
+      })}
+
+      {elements.style({
+        attrName: 'loadMoreBtn',
+      })}
+
       <CssStyle
         selector={orderClass}
         attr={attrs.css}

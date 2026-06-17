@@ -313,6 +313,131 @@
           }
         }
       }
+    },
+    "titleText": {
+      "type": "object",
+      "selector": "{{selector}} .cg_portfolio_pb__card-title",
+      "styleProps": {
+        "font": {
+          "important": {
+            "font": {
+              "desktop": {
+                "value": {
+                  "color": true
+                }
+              }
+            }
+          }
+        }
+      },
+      "settings": {
+        "decoration": {
+          "font": {
+            "priority": 10,
+            "component": {
+              "props": {
+                "groupLabel": "Title Text",
+                "fieldLabel": "Title",
+                "fields": {
+                  "headingLevel": {
+                    "render": false
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "tabText": {
+      "type": "object",
+      "selector": "{{selector}} .cg_portfolio_pb__tab",
+      "styleProps": {
+        "font": {
+          "important": {
+            "font": {
+              "desktop": {
+                "value": {
+                  "color": true
+                }
+              }
+            }
+          }
+        }
+      },
+      "settings": {
+        "decoration": {
+          "font": {
+            "priority": 20,
+            "component": {
+              "props": {
+                "groupLabel": "Filter Tabs Text",
+                "fieldLabel": "Tab"
+              }
+            }
+          }
+        }
+      }
+    },
+    "radioPillText": {
+      "type": "object",
+      "selector": "{{selector}} .cg_portfolio_pb__radio-pill span",
+      "styleProps": {
+        "font": {
+          "important": {
+            "font": {
+              "desktop": {
+                "value": {
+                  "color": true
+                }
+              }
+            }
+          }
+        }
+      },
+      "settings": {
+        "decoration": {
+          "font": {
+            "priority": 30,
+            "component": {
+              "props": {
+                "groupLabel": "Subcategory Tabs Text",
+                "fieldLabel": "Subcategory Pill"
+              }
+            }
+          }
+        }
+      }
+    },
+    "loadMoreBtn": {
+      "type": "object",
+      "selector": "{{selector}} .cg_portfolio_pb__load-more-btn",
+      "styleProps": {
+        "font": {
+          "important": {
+            "font": {
+              "desktop": {
+                "value": {
+                  "color": true
+                }
+              }
+            }
+          }
+        }
+      },
+      "settings": {
+        "decoration": {
+          "font": {
+            "priority": 40,
+            "component": {
+              "props": {
+                "groupLabel": "Load More Button Text",
+                "fieldLabel": "Button"
+              }
+            }
+          }
+        }
+      }
     }
   },
   "customCssFields": {},

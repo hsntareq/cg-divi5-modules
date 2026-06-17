@@ -38,6 +38,26 @@ trait ModuleStylesTrait {
 							'attrName' => 'module',
 						]
 					),
+					$elements->style(
+						[
+							'attrName' => 'titleText',
+						]
+					),
+					$elements->style(
+						[
+							'attrName' => 'tabText',
+						]
+					),
+					$elements->style(
+						[
+							'attrName' => 'radioPillText',
+						]
+					),
+					$elements->style(
+						[
+							'attrName' => 'loadMoreBtn',
+						]
+					),
 					CssStyle::style(
 						[
 							'selector'  => $args['orderClass'],
