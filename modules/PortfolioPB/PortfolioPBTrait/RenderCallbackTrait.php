@@ -250,18 +250,6 @@ trait RenderCallbackTrait {
 					);
 				}
 
-				// Hover Overlay
-				$overlay = sprintf(
-					'<div class="cg_portfolio_pb__overlay">
-						<div class="cg_portfolio_pb__overlay-content">
-							<h4 class="cg_portfolio_pb__card-title">%s</h4>
-							<span class="cg_portfolio_pb__card-view-btn">%s</span>
-						</div>
-					</div>',
-					esc_html( $post_title ),
-					esc_html__( 'View Details', 'cg-divi5-modules' )
-				);
-
 				$size = get_post_meta( $post_id, 'portfolio_pb_size', true );
 				$card_classes = [ 'cg_portfolio_pb__card' ];
 				if ( '2x1' === $size ) {
@@ -281,10 +269,15 @@ trait RenderCallbackTrait {
 				}
 
 				$extra_attrs = '';
+				$btn_class = 'cg_portfolio_pb__card-view-btn';
+				$btn_content = esc_html__( 'View Details', 'cg-divi5-modules' );
+
 				if ( 'lightbox' === $view_type ) {
 					$full_img_url = wp_get_attachment_image_url( get_post_thumbnail_id( $post_id ), 'full' );
 					$post_link = ! empty( $full_img_url ) ? $full_img_url : '#';
 					$card_classes[] = 'cg_portfolio_pb__card--lightbox';
+					$btn_class .= ' cg_portfolio_pb__card-view-btn--icon';
+					$btn_content = '<svg class="view-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; display: inline-block;"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>';
 				} elseif ( 'external' === $view_type ) {
 					$ext_url = get_post_meta( $post_id, 'portfolio_pb_external_url', true );
 					$post_link = ! empty( $ext_url ) ? $ext_url : '#';
@@ -295,6 +288,19 @@ trait RenderCallbackTrait {
 						$post_link = get_permalink( $custom_id );
 					}
 				}
+
+				// Hover Overlay
+				$overlay = sprintf(
+					'<div class="cg_portfolio_pb__overlay">
+						<div class="cg_portfolio_pb__overlay-content">
+							<h4 class="cg_portfolio_pb__card-title">%s</h4>
+							<span class="%s">%s</span>
+						</div>
+					</div>',
+					esc_html( $post_title ),
+					esc_attr( $btn_class ),
+					$btn_content
+				);
 
 				$classes_attr = implode( ' ', $card_classes );
 

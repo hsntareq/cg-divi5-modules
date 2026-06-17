@@ -344,6 +344,7 @@ export const PortfolioPBEdit = (props: PortfolioPBEditProps): ReactElement => {
 
                   // Read size from post meta
                   const size = post.meta?.portfolio_pb_size || 'regular';
+                  const viewType = post.meta?.portfolio_pb_view_type || 'default';
 
                   const cardClasses = ['cg_portfolio_pb__card'];
                   if (size === '2x1') {
@@ -355,6 +356,8 @@ export const PortfolioPBEdit = (props: PortfolioPBEditProps): ReactElement => {
                   } else {
                     cardClasses.push('cg_portfolio_pb__card--regular');
                   }
+
+                  const isLightbox = viewType === 'lightbox';
 
                   return (
                     <div key={post.id} className={cardClasses.join(' ')}>
@@ -374,7 +377,16 @@ export const PortfolioPBEdit = (props: PortfolioPBEditProps): ReactElement => {
                         <div className="cg_portfolio_pb__overlay">
                           <div className="cg_portfolio_pb__overlay-content">
                             <h4 className="cg_portfolio_pb__card-title">{titleText}</h4>
-                            <span className="cg_portfolio_pb__card-view-btn">View Details</span>
+                            {isLightbox ? (
+                              <span className="cg_portfolio_pb__card-view-btn cg_portfolio_pb__card-view-btn--icon">
+                                <svg className="view-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ verticalAlign: 'middle', display: 'inline-block' }}>
+                                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                                  <circle cx="12" cy="12" r="3" />
+                                </svg>
+                              </span>
+                            ) : (
+                              <span className="cg_portfolio_pb__card-view-btn">View Details</span>
+                            )}
                           </div>
                         </div>
                       </div>

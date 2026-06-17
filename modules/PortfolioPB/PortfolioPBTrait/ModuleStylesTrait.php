@@ -58,6 +58,11 @@ trait ModuleStylesTrait {
 							'attrName' => 'loadMoreBtn',
 						]
 					),
+					$elements->style(
+						[
+							'attrName' => 'item',
+						]
+					),
 					CssStyle::style(
 						[
 							'selector'  => $args['orderClass'],

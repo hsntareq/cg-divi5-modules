@@ -438,6 +438,34 @@
           }
         }
       }
+    },
+    "item": {
+      "type": "object",
+      "selector": "{{selector}} .cg_portfolio_pb__card",
+      "styleProps": {
+        "border": {
+          "important": true
+        }
+      },
+      "settings": {
+        "decoration": {
+          "border": {
+            "groupType": "group-item",
+            "item": {
+              "groupSlug": "portfolioItemStylesGroup",
+              "priority": 10,
+              "render": true,
+              "component": {
+                "type": "group",
+                "name": "divi/border",
+                "props": {
+                  "grouped": false
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "customCssFields": {},
@@ -465,6 +493,17 @@
           "name": "divi/composite",
           "props": {
             "groupLabel": "Portfolio Accent Styling"
+          }
+        }
+      },
+      "portfolioItemStylesGroup": {
+        "panel": "design",
+        "priority": 15,
+        "groupName": "portfolioItemStylesGroup",
+        "component": {
+          "name": "divi/composite",
+          "props": {
+            "groupLabel": "Portfolio Item Style"
           }
         }
       }

@@ -46,6 +46,10 @@ export const ModuleStyles = ({
         attrName: 'loadMoreBtn',
       })}
 
+      {elements.style({
+        attrName: 'item',
+      })}
+
       <CssStyle
         selector={orderClass}
         attr={attrs.css}
