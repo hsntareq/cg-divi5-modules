@@ -441,9 +441,67 @@ const initPortfolioPB = () => {
   });
 };
 
+const initLightbox = () => {
+  document.addEventListener('click', (e) => {
+    const card = (e.target as HTMLElement).closest('.cg_portfolio_pb__card--lightbox') as HTMLAnchorElement;
+    if (!card) return;
+
+    e.preventDefault();
+    const imgUrl = card.getAttribute('href');
+    if (!imgUrl || imgUrl === '#') return;
+
+    const titleEl = card.querySelector('.cg_portfolio_pb__card-title');
+    const titleText = titleEl ? titleEl.textContent || '' : '';
+
+    let overlay = document.querySelector('.cg_portfolio_pb__lightbox-overlay') as HTMLElement;
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.className = 'cg_portfolio_pb__lightbox-overlay';
+      overlay.innerHTML = `
+        <button class="cg_portfolio_pb__lightbox-close" aria-label="Close lightbox">&times;</button>
+        <div class="cg_portfolio_pb__lightbox-content">
+          <img class="cg_portfolio_pb__lightbox-img" src="" alt="Lightbox image" />
+          <div class="cg_portfolio_pb__lightbox-caption"></div>
+        </div>
+      `;
+      document.body.appendChild(overlay);
+
+      overlay.addEventListener('click', (evt) => {
+        if (
+          evt.target === overlay ||
+          (evt.target as HTMLElement).classList.contains('cg_portfolio_pb__lightbox-close')
+        ) {
+          closeLightbox(overlay);
+        }
+      });
+
+      document.addEventListener('keydown', (evt) => {
+        if (evt.key === 'Escape' && overlay.classList.contains('active')) {
+          closeLightbox(overlay);
+        }
+      });
+    }
+
+    const lightboxImg = overlay.querySelector('.cg_portfolio_pb__lightbox-img') as HTMLImageElement;
+    const lightboxCaption = overlay.querySelector('.cg_portfolio_pb__lightbox-caption') as HTMLElement;
+
+    if (lightboxImg) lightboxImg.src = imgUrl;
+    if (lightboxCaption) lightboxCaption.textContent = titleText;
+
+    overlay.classList.add('active');
+    document.body.style.overflow = 'hidden';
+  });
+
+  const closeLightbox = (overlay: HTMLElement) => {
+    overlay.classList.remove('active');
+    document.body.style.overflow = '';
+  };
+};
+
 const initAll = () => {
   initCarousel();
   initPortfolioPB();
+  initLightbox();
 };
 
 if (document.readyState === 'loading') {

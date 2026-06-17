@@ -100,27 +100,48 @@ function cg_divi5_modules_enqueue_frontend_scripts() {
 add_action( 'wp_enqueue_scripts', 'cg_divi5_modules_enqueue_frontend_scripts' );
 
 /**
- * Register post meta for Portfolio PB Module layout sizing.
+ * Register post meta for Portfolio PB Module layout sizing and custom click action.
  */
 function cg_portfolio_register_post_meta() {
-	register_post_meta(
-		'post',
-		'portfolio_pb_size',
-		[
-			'show_in_rest' => true,
-			'single'       => true,
-			'type'         => 'string',
-		]
-	);
-	register_post_meta(
-		'project',
-		'portfolio_pb_size',
-		[
-			'show_in_rest' => true,
-			'single'       => true,
-			'type'         => 'string',
-		]
-	);
+	$screens = [ 'post', 'project' ];
+	foreach ( $screens as $screen ) {
+		register_post_meta(
+			$screen,
+			'portfolio_pb_size',
+			[
+				'show_in_rest' => true,
+				'single'       => true,
+				'type'         => 'string',
+			]
+		);
+		register_post_meta(
+			$screen,
+			'portfolio_pb_view_type',
+			[
+				'show_in_rest' => true,
+				'single'       => true,
+				'type'         => 'string',
+			]
+		);
+		register_post_meta(
+			$screen,
+			'portfolio_pb_external_url',
+			[
+				'show_in_rest' => true,
+				'single'       => true,
+				'type'         => 'string',
+			]
+		);
+		register_post_meta(
+			$screen,
+			'portfolio_pb_custom_post_id',
+			[
+				'show_in_rest' => true,
+				'single'       => true,
+				'type'         => 'string',
+			]
+		);
+	}
 }
 add_action( 'init', 'cg_portfolio_register_post_meta' );
 
@@ -132,7 +153,7 @@ function cg_portfolio_pb_add_meta_box() {
 	foreach ( $screens as $screen ) {
 		add_meta_box(
 			'cg_portfolio_pb_size_box',
-			'Portfolio Grid Size',
+			'Portfolio Item Settings',
 			'cg_portfolio_pb_size_box_callback',
 			$screen,
 			'side',
@@ -143,21 +164,92 @@ function cg_portfolio_pb_add_meta_box() {
 add_action( 'add_meta_boxes', 'cg_portfolio_pb_add_meta_box' );
 
 /**
- * Render metabox dropdown.
+ * Render metabox dropdown and view type options.
  */
 function cg_portfolio_pb_size_box_callback( $post ) {
 	wp_nonce_field( 'cg_portfolio_pb_save_size', 'cg_portfolio_pb_size_nonce' );
-	$value = get_post_meta( $post->ID, 'portfolio_pb_size', true );
-	if ( empty( $value ) ) {
-		$value = 'regular';
+	
+	$size = get_post_meta( $post->ID, 'portfolio_pb_size', true );
+	if ( empty( $size ) ) {
+		$size = 'regular';
 	}
+	
+	$view_type = get_post_meta( $post->ID, 'portfolio_pb_view_type', true );
+	if ( empty( $view_type ) ) {
+		$view_type = 'default';
+	}
+	
+	$external_url = get_post_meta( $post->ID, 'portfolio_pb_external_url', true );
+	$custom_post_id = get_post_meta( $post->ID, 'portfolio_pb_custom_post_id', true );
+
+	// Fetch database posts, pages, and projects for custom link dropdown
+	$db_posts = get_posts( [
+		'post_type'      => [ 'post', 'page', 'project' ],
+		'posts_per_page' => -1,
+		'post_status'    => 'publish',
+		'orderby'        => 'title',
+		'order'          => 'ASC',
+	] );
 	?>
-	<select name="portfolio_pb_size_field" style="width: 100%; padding: 6px; border: 1px solid #ccc; border-radius: 4px;">
-		<option value="regular" <?php selected( $value, 'regular' ); ?>>Regular (1x1)</option>
-		<option value="2x1" <?php selected( $value, '2x1' ); ?>>2x Width (2x1)</option>
-		<option value="2x2" <?php selected( $value, '2x2' ); ?>>2x Width & Height (2x2)</option>
-		<option value="1x2" <?php selected( $value, '1x2' ); ?>>2x Height (1x2)</option>
-	</select>
+	<div style="margin-bottom: 15px;">
+		<label style="display: block; font-weight: bold; margin-bottom: 5px;">Portfolio Grid Size</label>
+		<select name="portfolio_pb_size_field" style="width: 100%; padding: 6px; border: 1px solid #ccc; border-radius: 4px;">
+			<option value="regular" <?php selected( $size, 'regular' ); ?>>Regular (1x1)</option>
+			<option value="2x1" <?php selected( $size, '2x1' ); ?>>2x Width (2x1)</option>
+			<option value="2x2" <?php selected( $size, '2x2' ); ?>>2x Width & Height (2x2)</option>
+			<option value="1x2" <?php selected( $size, '1x2' ); ?>>2x Height (1x2)</option>
+		</select>
+	</div>
+
+	<div style="margin-bottom: 15px;">
+		<label style="display: block; font-weight: bold; margin-bottom: 5px;">Click Action (View Pattern)</label>
+		<select id="portfolio_pb_view_type_select" name="portfolio_pb_view_type_field" style="width: 100%; padding: 6px; border: 1px solid #ccc; border-radius: 4px;">
+			<option value="default" <?php selected( $view_type, 'default' ); ?>>Default Post Link</option>
+			<option value="lightbox" <?php selected( $view_type, 'lightbox' ); ?>>Image Lightbox</option>
+			<option value="external" <?php selected( $view_type, 'external' ); ?>>External Link</option>
+			<option value="custom" <?php selected( $view_type, 'custom' ); ?>>Custom Site Page/Post/Project</option>
+		</select>
+	</div>
+
+	<div id="portfolio_pb_external_url_container" style="margin-bottom: 15px; display: <?php echo ( 'external' === $view_type ) ? 'block' : 'none'; ?>;">
+		<label style="display: block; font-weight: bold; margin-bottom: 5px;">External Link URL</label>
+		<input type="url" name="portfolio_pb_external_url_field" value="<?php echo esc_url( $external_url ); ?>" placeholder="https://example.com" style="width: 100%; padding: 6px; border: 1px solid #ccc; border-radius: 4px;" />
+	</div>
+
+	<div id="portfolio_pb_custom_post_container" style="margin-bottom: 15px; display: <?php echo ( 'custom' === $view_type ) ? 'block' : 'none'; ?>;">
+		<label style="display: block; font-weight: bold; margin-bottom: 5px;">Select Site Page/Post/Project</label>
+		<select name="portfolio_pb_custom_post_id_field" style="width: 100%; padding: 6px; border: 1px solid #ccc; border-radius: 4px;">
+			<option value="">-- Choose Page --</option>
+			<?php foreach ( $db_posts as $db_post ) : ?>
+				<option value="<?php echo esc_attr( $db_post->ID ); ?>" <?php selected( $custom_post_id, $db_post->ID ); ?>>
+					<?php echo esc_html( $db_post->post_title ); ?> (<?php echo esc_html( $db_post->post_type ); ?>)
+				</option>
+			<?php endforeach; ?>
+		</select>
+	</div>
+
+	<script>
+		document.addEventListener('DOMContentLoaded', function() {
+			var select = document.getElementById('portfolio_pb_view_type_select');
+			var externalContainer = document.getElementById('portfolio_pb_external_url_container');
+			var customContainer = document.getElementById('portfolio_pb_custom_post_container');
+
+			if (select) {
+				select.addEventListener('change', function() {
+					if (this.value === 'external') {
+						externalContainer.style.display = 'block';
+						customContainer.style.display = 'none';
+					} else if (this.value === 'custom') {
+						externalContainer.style.display = 'none';
+						customContainer.style.display = 'block';
+					} else {
+						externalContainer.style.display = 'none';
+						customContainer.style.display = 'none';
+					}
+				});
+			}
+		});
+	</script>
 	<?php
 }
 
@@ -177,8 +269,21 @@ function cg_portfolio_pb_save_size_data( $post_id ) {
 	if ( ! current_user_can( 'edit_post', $post_id ) ) {
 		return;
 	}
+	
 	if ( isset( $_POST['portfolio_pb_size_field'] ) ) {
 		update_post_meta( $post_id, 'portfolio_pb_size', sanitize_text_field( $_POST['portfolio_pb_size_field'] ) );
+	}
+	
+	if ( isset( $_POST['portfolio_pb_view_type_field'] ) ) {
+		update_post_meta( $post_id, 'portfolio_pb_view_type', sanitize_text_field( $_POST['portfolio_pb_view_type_field'] ) );
+	}
+	
+	if ( isset( $_POST['portfolio_pb_external_url_field'] ) ) {
+		update_post_meta( $post_id, 'portfolio_pb_external_url', esc_url_raw( $_POST['portfolio_pb_external_url_field'] ) );
+	}
+	
+	if ( isset( $_POST['portfolio_pb_custom_post_id_field'] ) ) {
+		update_post_meta( $post_id, 'portfolio_pb_custom_post_id', sanitize_text_field( $_POST['portfolio_pb_custom_post_id_field'] ) );
 	}
 }
 add_action( 'save_post', 'cg_portfolio_pb_save_size_data' );

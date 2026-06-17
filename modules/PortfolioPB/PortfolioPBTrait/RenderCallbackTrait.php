@@ -273,11 +273,34 @@ trait RenderCallbackTrait {
 				} else {
 					$card_classes[] = 'cg_portfolio_pb__card--regular';
 				}
+
+				// Click Action View Pattern
+				$view_type = get_post_meta( $post_id, 'portfolio_pb_view_type', true );
+				if ( empty( $view_type ) ) {
+					$view_type = 'default';
+				}
+
+				$extra_attrs = '';
+				if ( 'lightbox' === $view_type ) {
+					$full_img_url = wp_get_attachment_image_url( get_post_thumbnail_id( $post_id ), 'full' );
+					$post_link = ! empty( $full_img_url ) ? $full_img_url : '#';
+					$card_classes[] = 'cg_portfolio_pb__card--lightbox';
+				} elseif ( 'external' === $view_type ) {
+					$ext_url = get_post_meta( $post_id, 'portfolio_pb_external_url', true );
+					$post_link = ! empty( $ext_url ) ? $ext_url : '#';
+					$extra_attrs = ' target="_blank" rel="noopener noreferrer"';
+				} elseif ( 'custom' === $view_type ) {
+					$custom_id = get_post_meta( $post_id, 'portfolio_pb_custom_post_id', true );
+					if ( ! empty( $custom_id ) ) {
+						$post_link = get_permalink( $custom_id );
+					}
+				}
+
 				$classes_attr = implode( ' ', $card_classes );
 
 
 				$posts_html .= sprintf(
-					'<a href="%s" class="%s" data-categories="%s"%s>
+					'<a href="%s" class="%s" data-categories="%s"%s%s>
 						<div class="cg_portfolio_pb__thumbnail-wrapper">
 							%s
 							%s
@@ -287,6 +310,7 @@ trait RenderCallbackTrait {
 					esc_attr( $classes_attr ),
 					esc_attr( $categories_attr ),
 					$display_style,
+					$extra_attrs,
 					$thumbnail,
 					$overlay
 				);
