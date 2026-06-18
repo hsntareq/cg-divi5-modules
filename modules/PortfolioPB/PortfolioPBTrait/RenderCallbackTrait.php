@@ -48,6 +48,67 @@ trait RenderCallbackTrait {
 		return $default_value;
 	}
 
+	public static function is_direct_video( $url ) {
+		if ( empty( $url ) ) {
+			return false;
+		}
+		if ( preg_match( '/\.(mp4|webm|ogg|ogv)(\?|$)/i', $url ) ) {
+			return true;
+		}
+		return false;
+	}
+
+	/**
+	 * Get direct stream URL for Google Drive or returns the original URL.
+	 *
+	 * @param string $url Video URL.
+	 *
+	 * @return string
+	 */
+	public static function get_video_stream_url( $url ) {
+		if ( empty( $url ) ) {
+			return '';
+		}
+		if ( preg_match( '/(?:drive\.google\.com\/(?:file\/d\/|open\?id=)|uc\?id=)([a-zA-Z0-9_-]{25,})/', $url, $matches ) ) {
+			return 'https://drive.google.com/uc?export=download&id=' . $matches[1];
+		}
+		return $url;
+	}
+
+	/**
+	 * Get preview/embed URL for Google Drive or returns the original URL.
+	 *
+	 * @param string $url Video URL.
+	 *
+	 * @return string
+	 */
+	public static function get_google_drive_preview_url( $url ) {
+		if ( empty( $url ) ) {
+			return '';
+		}
+		if ( preg_match( '/(?:drive\.google\.com\/(?:file\/d\/|open\?id=)|uc\?id=)([a-zA-Z0-9_-]{25,})/', $url, $matches ) ) {
+			return 'https://drive.google.com/file/d/' . $matches[1] . '/preview';
+		}
+		return $url;
+	}
+
+	/**
+	 * Get Google Drive file ID from URL or returns empty string.
+	 *
+	 * @param string $url Video URL.
+	 *
+	 * @return string
+	 */
+	public static function get_google_drive_file_id( $url ) {
+		if ( empty( $url ) ) {
+			return '';
+		}
+		if ( preg_match( '/(?:drive\.google\.com\/(?:file\/d\/|open\?id=)|uc\?id=)([a-zA-Z0-9_-]{25,})/', $url, $matches ) ) {
+			return $matches[1];
+		}
+		return '';
+	}
+
 	/**
 	 * Render callback for Portfolio PB module.
 	 *
@@ -61,13 +122,29 @@ trait RenderCallbackTrait {
 	public static function render_callback( $attrs, $content, $block, $elements ) {
 		// Extract attributes robustly
 		$post_type          = self::get_attr_value( $attrs['postType'] ?? null, 'post' );
-		$posts_number       = intval( self::get_attr_value( $attrs['postsNumber'] ?? null, '12' ) );
 		$grid_columns       = self::get_attr_value( $attrs['gridColumns'] ?? null, '3' );
+		$grid_columns_int   = intval( $grid_columns );
+		if ( $grid_columns_int < 1 ) {
+			$grid_columns_int = 3;
+		}
+
+		$rows_number_attr   = self::get_attr_value( $attrs['rowsNumber'] ?? null, '' );
+		$posts_number_attr  = self::get_attr_value( $attrs['postsNumber'] ?? null, '' );
+
+		if ( ! empty( $posts_number_attr ) ) {
+			$posts_number = intval( $posts_number_attr );
+		} elseif ( ! empty( $rows_number_attr ) ) {
+			$posts_number = intval( $rows_number_attr ) * $grid_columns_int;
+		} else {
+			$posts_number = 12;
+		}
 		$hide_empty_subcats = self::get_attr_value( $attrs['hideEmptySubcats'] ?? null, 'off' );
 		$direct_subcat_label = self::get_attr_value( $attrs['directSubcatLabel'] ?? null, 'parent' );
 		$show_load_more     = self::get_attr_value( $attrs['showLoadMore'] ?? null, 'on' );
 		$load_more_text     = self::get_attr_value( $attrs['loadMoreText'] ?? null, 'Load More' );
 		$active_color       = self::get_attr_value( $attrs['activeColor'] ?? null, '#7e22ce' );
+		$open_in_new_tab    = self::get_attr_value( $attrs['openInNewTab'] ?? null, 'off' );
+		$fill_row           = self::get_attr_value( $attrs['fillRow'] ?? null, 'off' );
 		$module_id          = $block->parsed_block['id'] ?? uniqid();
 
 		// Determine taxonomy
@@ -205,9 +282,61 @@ trait RenderCallbackTrait {
 			$query = new \WP_Query();
 		}
 
+		// Calculate the exact number of posts to display to fill the row gaps with actual posts
+		$posts_to_show = 0;
+		$post_spans = [];
+		if ( $query->have_posts() ) {
+			while ( $query->have_posts() ) {
+				$query->the_post();
+				$size = get_post_meta( get_the_ID(), 'portfolio_pb_size', true );
+				$span = ( '2x1' === $size || '2x2' === $size ) ? 2 : 1;
+				$post_spans[] = $span;
+			}
+			$query->rewind_posts();
+		}
+
+		$total_queried = count( $post_spans );
+		if ( $total_queried > 0 ) {
+			$current_span_sum = 0;
+			$found_fill = false;
+			for ( $i = 0; $i < $total_queried; $i++ ) {
+				$current_span_sum += $post_spans[$i];
+				if ( ($i + 1) >= $posts_number ) {
+					if ( $current_span_sum % $grid_columns_int === 0 ) {
+						$posts_to_show = $i + 1;
+						$found_fill = true;
+						break;
+					}
+				}
+			}
+			if ( ! $found_fill ) {
+				$posts_to_show = min( $total_queried, $posts_number );
+			}
+		} else {
+			$posts_to_show = $posts_number;
+		}
+
 		$posts_html = '';
 		$post_categories_map = [];
 		$post_count = 0;
+
+		// Pre-scan to identify the first video post ID visible in the default "All" tab (within the first posts_to_show)
+		$first_video_id = 0;
+		if ( $query->have_posts() ) {
+			$temp_count = 0;
+			while ( $query->have_posts() ) {
+				$query->the_post();
+				$temp_count++;
+				if ( $temp_count <= $posts_to_show ) {
+					$v_type = get_post_meta( get_the_ID(), 'portfolio_pb_view_type', true );
+					if ( 'video' === $v_type ) {
+						$first_video_id = get_the_ID();
+						break;
+					}
+				}
+			}
+			$query->rewind_posts();
+		}
 
 		if ( $query->have_posts() ) {
 			while ( $query->have_posts() ) {
@@ -217,7 +346,7 @@ trait RenderCallbackTrait {
 				$post_link  = get_permalink();
 
 				$post_count++;
-				$display_style = ( $post_count <= $posts_number ) ? '' : ' style="display: none;"';
+				$display_style = ( $post_count <= $posts_to_show ) ? '' : ' style="display: none;"';
 
 				// Get category IDs for the post
 				$post_terms     = get_the_terms( $post_id, $taxonomy );
@@ -250,7 +379,21 @@ trait RenderCallbackTrait {
 					);
 				}
 
-				$size = get_post_meta( $post_id, 'portfolio_pb_size', true );
+				$original_size = get_post_meta( $post_id, 'portfolio_pb_size', true );
+				if ( empty( $original_size ) ) {
+					$original_size = 'regular';
+				}
+
+				// Click Action View Pattern
+				$view_type = get_post_meta( $post_id, 'portfolio_pb_view_type', true );
+				if ( empty( $view_type ) ) {
+					$view_type = 'default';
+				}
+
+				$is_video_card = ( 'video' === $view_type );
+				$is_first_video = ( $post_id === $first_video_id );
+				$size = $original_size;
+
 				$card_classes = [ 'cg_portfolio_pb__card' ];
 				if ( '2x1' === $size ) {
 					$card_classes[] = 'cg_portfolio_pb__card--2x1';
@@ -262,36 +405,86 @@ trait RenderCallbackTrait {
 					$card_classes[] = 'cg_portfolio_pb__card--regular';
 				}
 
-				// Click Action View Pattern
-				$view_type = get_post_meta( $post_id, 'portfolio_pb_view_type', true );
-				if ( empty( $view_type ) ) {
-					$view_type = 'default';
+				if ( $is_video_card ) {
+					$card_classes[] = 'cg_portfolio_pb__card--video-active';
 				}
 
+				$new_tab_attr = ( 'on' === $open_in_new_tab ) ? ' target="_blank" rel="noopener noreferrer"' : '';
 				$extra_attrs = '';
-				$btn_class = 'cg_portfolio_pb__card-view-btn';
-				$btn_content = esc_html__( 'View Details', 'cg-divi5-modules' );
+				$btn_class = 'cg_portfolio_pb__card-view-btn cg_portfolio_pb__card-view-btn--icon';
+
+				$image_svg = '<svg class="view-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; display: inline-block;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>';
+				$video_svg = '<svg class="view-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; display: inline-block;"><polygon points="6 3 20 12 6 21 6 3"></polygon></svg>';
+				$link_svg  = '<svg class="view-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; display: inline-block;"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>';
 
 				if ( 'lightbox' === $view_type ) {
 					$full_img_url = wp_get_attachment_image_url( get_post_thumbnail_id( $post_id ), 'full' );
 					$post_link = ! empty( $full_img_url ) ? $full_img_url : '#';
 					$card_classes[] = 'cg_portfolio_pb__card--lightbox';
-					$btn_class .= ' cg_portfolio_pb__card-view-btn--icon';
-					$btn_content = '<svg class="view-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; display: inline-block;"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>';
+					$btn_content = $image_svg;
+				} elseif ( 'video' === $view_type ) {
+					$video_url = get_post_meta( $post_id, 'portfolio_pb_video_url', true );
+					$post_link = ! empty( $video_url ) ? $video_url : '#';
+					$card_classes[] = 'cg_portfolio_pb__card--video';
+					$btn_content = $video_svg;
 				} elseif ( 'external' === $view_type ) {
 					$ext_url = get_post_meta( $post_id, 'portfolio_pb_external_url', true );
 					$post_link = ! empty( $ext_url ) ? $ext_url : '#';
-					$extra_attrs = ' target="_blank" rel="noopener noreferrer"';
+					$extra_attrs = $new_tab_attr;
+					$btn_content = $link_svg;
 				} elseif ( 'custom' === $view_type ) {
 					$custom_id = get_post_meta( $post_id, 'portfolio_pb_custom_post_id', true );
 					if ( ! empty( $custom_id ) ) {
 						$post_link = get_permalink( $custom_id );
 					}
+					$extra_attrs = $new_tab_attr;
+					$btn_content = $link_svg;
+				} else {
+					$extra_attrs = $new_tab_attr;
+					$btn_content = $link_svg;
+				}
+
+				$iframe_html = '';
+				$thumbnail_html = $thumbnail;
+				if ( $is_video_card ) {
+					$video_url = get_post_meta( $post_id, 'portfolio_pb_video_url', true );
+					if ( ! empty( $video_url ) ) {
+						if ( self::is_direct_video( $video_url ) ) {
+							$stream_url = self::get_video_stream_url( $video_url );
+							$autoplay_attr = $is_first_video ? ' autoplay' : '';
+							$iframe_html = sprintf(
+								'<video src="%s" width="640" height="480"%s muted loop playsinline style="width: 100%%; height: 100%%; object-fit: cover;"></video>',
+								esc_url( $stream_url ),
+								$autoplay_attr
+							);
+						} else {
+							$embed_url = $video_url;
+							$query_args = [ 'autoplay' => $is_first_video ? 1 : 0, 'mute' => 1, 'muted' => 1 ];
+							if ( strpos( $video_url, 'youtube.com' ) !== false || strpos( $video_url, 'youtu.be' ) !== false ) {
+								$query_args['enablejsapi'] = 1;
+							}
+							if ( strpos( $video_url, 'drive.google.com' ) !== false ) {
+								$embed_url = self::get_google_drive_preview_url( $video_url );
+								$file_id = self::get_google_drive_file_id( $video_url );
+								if ( ! empty( $file_id ) ) {
+									$query_args['loop'] = 1;
+									$query_args['playlist'] = $file_id;
+								}
+							}
+							$muted_url = add_query_arg( $query_args, $embed_url );
+							$iframe_html = sprintf(
+								'<iframe src="%s" width="640" height="480" frameborder="0" allow="autoplay; fullscreen" allowfullscreen="true" style="position: absolute; top: 0; left: 0; width: 100%%; height: 100%%; border: none; z-index: 1;"></iframe>',
+								esc_url( $muted_url )
+							);
+						}
+					}
+					$thumbnail_html = '';
 				}
 
 				// Hover Overlay
 				$overlay = sprintf(
 					'<div class="cg_portfolio_pb__overlay">
+						<button type="button" class="cg_portfolio_pb__overlay-close" aria-label="Hide overlay">&times;</button>
 						<div class="cg_portfolio_pb__overlay-content">
 							<h4 class="cg_portfolio_pb__card-title">%s</h4>
 							<span class="%s">%s</span>
@@ -302,12 +495,22 @@ trait RenderCallbackTrait {
 					$btn_content
 				);
 
+				$show_modal_btn = '';
+				if ( 'video' === $view_type || 'lightbox' === $view_type ) {
+					$show_modal_btn = sprintf(
+						'<button type="button" class="cg_portfolio_pb__show-modal-trigger" aria-label="Open gallery modal">
+							<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+						</button>'
+					);
+				}
+
 				$classes_attr = implode( ' ', $card_classes );
 
-
 				$posts_html .= sprintf(
-					'<a href="%s" class="%s" data-categories="%s"%s%s>
+					'<a href="%s" class="%s" data-categories="%s" data-original-size="%s"%s%s>
 						<div class="cg_portfolio_pb__thumbnail-wrapper">
+							%s
+							%s
 							%s
 							%s
 						</div>
@@ -315,10 +518,13 @@ trait RenderCallbackTrait {
 					esc_url( $post_link ),
 					esc_attr( $classes_attr ),
 					esc_attr( $categories_attr ),
+					esc_attr( $original_size ),
 					$display_style,
 					$extra_attrs,
-					$thumbnail,
-					$overlay
+					$thumbnail_html,
+					$overlay,
+					$iframe_html,
+					$show_modal_btn
 				);
 
 			}
@@ -454,7 +660,7 @@ trait RenderCallbackTrait {
 		// Combine parts
 		$load_more_btn_html = '';
 		if ( 'on' === $show_load_more ) {
-			$btn_style = ( $post_count > $posts_number ) ? '' : ' style="display: none;"';
+			$btn_style = ( $post_count > $posts_to_show ) ? '' : ' style="display: none;"';
 			$load_more_btn_html = sprintf(
 				'<div class="cg_portfolio_pb__load-more-container"%s>
 					<button type="button" class="cg_portfolio_pb__load-more-btn">%s</button>
@@ -464,13 +670,15 @@ trait RenderCallbackTrait {
 			);
 		}
 
+		$grid_class_extra = '';
+
 		$content_html = sprintf(
 			'<div class="cg_portfolio_pb__wrapper" style="%s">
 				<div class="cg_portfolio_pb__tabs-container">
 					%s
 				</div>
 				%s
-				<div class="cg_portfolio_pb__grid cg_portfolio_pb__grid--cols-%s" data-posts-limit="%d">
+				<div class="cg_portfolio_pb__grid cg_portfolio_pb__grid--cols-%s%s" data-posts-limit="%d">
 					%s
 				</div>
 				%s
@@ -479,7 +687,8 @@ trait RenderCallbackTrait {
 			$tabs_html,
 			$radios_html,
 			esc_attr( $grid_columns ),
-			$posts_number,
+			$grid_class_extra,
+			$posts_to_show,
 			$posts_html,
 			$load_more_btn_html
 		);

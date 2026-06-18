@@ -24,6 +24,41 @@ const getAttrValue = (attr: any, defaultValue: string): string => {
   return defaultValue;
 };
 
+const isDirectVideo = (url: string): boolean => {
+  if (!url) return false;
+  if (/\.(mp4|webm|ogg|ogv)(\?|$)/i.test(url)) {
+    return true;
+  }
+  return false;
+};
+
+const getGoogleDrivePreviewUrl = (url: string): string => {
+  if (!url) return '';
+  const driveRegex = /(?:drive\.google\.com\/(?:file\/d\/|open\?id=)|uc\?id=)([a-zA-Z0-9_-]{25,})/;
+  const match = url.match(driveRegex);
+  if (match && match[1]) {
+    return `https://drive.google.com/file/d/${match[1]}/preview`;
+  }
+  return url;
+};
+
+const getGoogleDriveFileId = (url: string): string => {
+  if (!url) return '';
+  const driveRegex = /(?:drive\.google\.com\/(?:file\/d\/|open\?id=)|uc\?id=)([a-zA-Z0-9_-]{25,})/;
+  const match = url.match(driveRegex);
+  return match && match[1] ? match[1] : '';
+};
+
+const getVideoStreamUrl = (url: string): string => {
+  if (!url) return '';
+  const driveRegex = /(?:drive\.google\.com\/(?:file\/d\/|open\?id=)|uc\?id=)([a-zA-Z0-9_-]{25,})/;
+  const match = url.match(driveRegex);
+  if (match && match[1]) {
+    return `https://drive.google.com/uc?export=download&id=${match[1]}`;
+  }
+  return url;
+};
+
 export const PortfolioPBEdit = (props: PortfolioPBEditProps): ReactElement => {
   const {
     attrs,
@@ -34,13 +69,25 @@ export const PortfolioPBEdit = (props: PortfolioPBEditProps): ReactElement => {
 
   // Extract settings using the robust helper
   const postType = getAttrValue(attrs?.postType, 'post');
-  const postsNumber = parseInt(getAttrValue(attrs?.postsNumber, '12'), 10);
   const gridColumns = getAttrValue(attrs?.gridColumns, '3');
+  const columnsInt = parseInt(gridColumns, 10) || 3;
+
+  const rowsNumberAttr = getAttrValue(attrs?.rowsNumber, '');
+  const postsNumberAttr = getAttrValue(attrs?.postsNumber, '');
+
+  let postsNumber = 12;
+  if (postsNumberAttr) {
+    postsNumber = parseInt(postsNumberAttr, 10) || 12;
+  } else if (rowsNumberAttr) {
+    postsNumber = (parseInt(rowsNumberAttr, 10) || 4) * columnsInt;
+  }
   const hideEmptySubcats = getAttrValue(attrs?.hideEmptySubcats, 'off');
   const directSubcatLabel = getAttrValue(attrs?.directSubcatLabel, 'parent');
   const showLoadMore = getAttrValue(attrs?.showLoadMore, 'on');
   const loadMoreText = getAttrValue(attrs?.loadMoreText, 'Load More');
   const activeColor = getAttrValue(attrs?.activeColor, '#7e22ce');
+  const openInNewTab = getAttrValue(attrs?.openInNewTab, 'off');
+  const fillRow = getAttrValue(attrs?.fillRow, 'off');
 
   // React state for fetched data & filters
   const [categories, setCategories] = useState<any[]>([]);
@@ -49,6 +96,7 @@ export const PortfolioPBEdit = (props: PortfolioPBEditProps): ReactElement => {
   const [activeCat, setActiveCat] = useState<number | null>(null); // null = "All"
   const [activeSubcat, setActiveSubcat] = useState<number | null>(null); // null = "All"
   const [currentLimit, setCurrentLimit] = useState<number>(postsNumber);
+  const [hiddenOverlays, setHiddenOverlays] = useState<Record<number, boolean>>({});
 
   // Fetch data on mount / attributes change
   useEffect(() => {
@@ -225,6 +273,38 @@ export const PortfolioPBEdit = (props: PortfolioPBEditProps): ReactElement => {
     return true;
   });
 
+  // Find the exact number of posts to display to fill the row gaps with actual posts
+  let postsToShow = 0;
+  const totalFiltered = filteredPosts.length;
+  if (totalFiltered > 0) {
+    let currentSpanSum = 0;
+    let foundFill = false;
+    for (let i = 0; i < totalFiltered; i++) {
+      const post = filteredPosts[i];
+      const size = post.meta?.portfolio_pb_size || 'regular';
+      const span = (size === '2x1' || size === '2x2') ? 2 : 1;
+      currentSpanSum += span;
+      if ((i + 1) >= currentLimit) {
+        if (currentSpanSum % columnsInt === 0) {
+          postsToShow = i + 1;
+          foundFill = true;
+          break;
+        }
+      }
+    }
+    if (!foundFill) {
+      postsToShow = Math.min(totalFiltered, currentLimit);
+    }
+  } else {
+    postsToShow = currentLimit;
+  }
+
+  const slicedPosts = filteredPosts.slice(0, postsToShow);
+  const firstVideoPost = slicedPosts.find(p => {
+    const viewType = p.meta?.portfolio_pb_view_type || 'default';
+    return viewType === 'video';
+  });
+
   // Resolve thumbnail image URL helper
   const getPostImageUrl = (post: any): string | null => {
     const embedded = post._embedded;
@@ -253,7 +333,7 @@ export const PortfolioPBEdit = (props: PortfolioPBEditProps): ReactElement => {
         attrName: 'module',
       })}
 
-      <div className="cg_portfolio_pb__wrapper" style={inlineStyles}>
+      <div className="cg_portfolio_pb__wrapper cg_portfolio_pb_parent" style={inlineStyles} data-is-builder="true">
         {/* Category Tabs */}
         <div className="cg_portfolio_pb__tabs-container">
           <button
@@ -332,20 +412,24 @@ export const PortfolioPBEdit = (props: PortfolioPBEditProps): ReactElement => {
         {/* Post Thumbnails Grid */}
         {!loading && (
           <>
-            <div className={`cg_portfolio_pb__grid cg_portfolio_pb__grid--cols-${gridColumns}`}>
+            <div className={`cg_portfolio_pb__grid cg_portfolio_pb__grid--cols-${gridColumns} ${fillRow === 'on' ? 'cg_portfolio_pb__grid--fill-row' : ''}`}>
               {filteredPosts.length === 0 ? (
                 <div className="cg_portfolio_pb__empty">
                   No items found for the selected filters.
                 </div>
               ) : (
-                filteredPosts.slice(0, currentLimit).map(post => {
+                slicedPosts.map(post => {
                   const imgUrl = getPostImageUrl(post);
                   const titleText = post.title?.rendered || 'Untitled';
 
                   // Read size from post meta
-                  const size = post.meta?.portfolio_pb_size || 'regular';
+                  const originalSize = post.meta?.portfolio_pb_size || 'regular';
+                  const size = originalSize;
                   const viewType = post.meta?.portfolio_pb_view_type || 'default';
+                  const isVideoCard = viewType === 'video';
+                  const isFirstVideo = !!(firstVideoPost && post.id === firstVideoPost.id);
 
+                  const isOverlayHidden = !!hiddenOverlays[post.id];
                   const cardClasses = ['cg_portfolio_pb__card'];
                   if (size === '2x1') {
                     cardClasses.push('cg_portfolio_pb__card--2x1');
@@ -357,38 +441,155 @@ export const PortfolioPBEdit = (props: PortfolioPBEditProps): ReactElement => {
                     cardClasses.push('cg_portfolio_pb__card--regular');
                   }
 
-                  const isLightbox = viewType === 'lightbox';
+                  if (isVideoCard) {
+                    cardClasses.push('cg_portfolio_pb__card--video-active');
+                  }
+
+                  if (isFirstVideo) {
+                    cardClasses.push('cg_portfolio_pb__card--playing');
+                  }
+
+                  if (isOverlayHidden) {
+                    cardClasses.push('cg_portfolio_pb__card--overlay-hidden');
+                  }
+
+                  const isLightbox = viewType === 'lightbox' || viewType === 'video';
+
+                  // Mute and autoplay Visual Builder iframe/video if video card
+                  let mutedUrl = post.meta?.portfolio_pb_video_url;
+                  const isDirect = isVideoCard && mutedUrl && isDirectVideo(mutedUrl);
+
+                  if (isVideoCard && mutedUrl && !isDirect) {
+                    if (mutedUrl.includes('drive.google.com')) {
+                      mutedUrl = getGoogleDrivePreviewUrl(mutedUrl);
+                    }
+                    const autoplayVal = '0';
+                    try {
+                      const u = new URL(mutedUrl);
+                      u.searchParams.set('autoplay', autoplayVal);
+                      u.searchParams.set('mute', '1');
+                      u.searchParams.set('muted', '1');
+                      if (mutedUrl.includes('youtube.com') || mutedUrl.includes('youtu.be')) {
+                        u.searchParams.set('enablejsapi', '1');
+                      }
+                      if (mutedUrl.includes('drive.google.com')) {
+                        const fileId = getGoogleDriveFileId(mutedUrl);
+                        if (fileId) {
+                          u.searchParams.set('loop', '1');
+                          u.searchParams.set('playlist', fileId);
+                        }
+                      }
+                      mutedUrl = u.toString();
+                    } catch (e) {
+                      let extra = `autoplay=${autoplayVal}&mute=1&muted=1`;
+                      if (mutedUrl.includes('youtube.com') || mutedUrl.includes('youtu.be')) {
+                        extra += '&enablejsapi=1';
+                      }
+                      if (mutedUrl.includes('drive.google.com')) {
+                        const fileId = getGoogleDriveFileId(mutedUrl);
+                        if (fileId) {
+                          extra += `&loop=1&playlist=${fileId}`;
+                        }
+                      }
+                      mutedUrl = mutedUrl + (mutedUrl.indexOf('?') >= 0 ? '&' : '?') + extra;
+                    }
+                  }
 
                   return (
                     <div key={post.id} className={cardClasses.join(' ')}>
                       <div className="cg_portfolio_pb__thumbnail-wrapper">
-                        {imgUrl ? (
-                          <img
-                            src={imgUrl}
-                            alt={titleText}
-                            className="cg_portfolio_pb__thumbnail"
-                          />
+                        {isVideoCard ? (
+                          isDirect ? (
+                            <video
+                              src={getVideoStreamUrl(mutedUrl)}
+                              autoPlay={false}
+                              muted={true}
+                              loop={true}
+                              playsInline={true}
+                              style={{ border: 'none', width: '100%', height: '100%', display: 'block', position: 'absolute', top: 0, left: 0, objectFit: 'cover', zIndex: 1 }}
+                            />
+                          ) : (
+                            <iframe
+                              src={mutedUrl}
+                              width="640"
+                              height="480"
+                              style={{ border: 'none', width: '100%', height: '100%', display: 'block', position: 'absolute', top: 0, left: 0, zIndex: 1 }}
+                              allow="autoplay; fullscreen"
+                              allowFullScreen
+                            />
+                          )
                         ) : (
-                          <div className="cg_portfolio_pb__thumbnail-placeholder">
-                            <span className="placeholder-icon">🖼️</span>
-                          </div>
+                          imgUrl ? (
+                            <img
+                              src={imgUrl}
+                              alt={titleText}
+                              className="cg_portfolio_pb__thumbnail"
+                            />
+                          ) : (
+                            <div className="cg_portfolio_pb__thumbnail-placeholder">
+                              <span className="placeholder-icon">🖼️</span>
+                            </div>
+                          )
                         )}
-                        {/* Hover Overlay */}
+                        {/* Hover Overlay - always rendered so it sits on top of the iframe/thumbnail */}
                         <div className="cg_portfolio_pb__overlay">
+                          <button
+                            type="button"
+                            className="cg_portfolio_pb__overlay-close"
+                            aria-label="Hide overlay"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setHiddenOverlays(prev => ({ ...prev, [post.id]: true }));
+                            }}
+                          >
+                            &times;
+                          </button>
                           <div className="cg_portfolio_pb__overlay-content">
                             <h4 className="cg_portfolio_pb__card-title">{titleText}</h4>
-                            {isLightbox ? (
+                            {viewType === 'video' ? (
                               <span className="cg_portfolio_pb__card-view-btn cg_portfolio_pb__card-view-btn--icon">
                                 <svg className="view-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ verticalAlign: 'middle', display: 'inline-block' }}>
-                                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                                  <circle cx="12" cy="12" r="3" />
+                                  <polygon points="6 3 20 12 6 21 6 3" />
+                                </svg>
+                              </span>
+                            ) : viewType === 'lightbox' ? (
+                              <span className="cg_portfolio_pb__card-view-btn cg_portfolio_pb__card-view-btn--icon">
+                                <svg className="view-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" style={{ verticalAlign: 'middle', display: 'inline-block' }}>
+                                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                                  <circle cx="8.5" cy="8.5" r="1.5" />
+                                  <polyline points="21 15 16 10 5 21" />
                                 </svg>
                               </span>
                             ) : (
-                              <span className="cg_portfolio_pb__card-view-btn">View Details</span>
+                              <span className="cg_portfolio_pb__card-view-btn cg_portfolio_pb__card-view-btn--icon">
+                                <svg className="view-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ verticalAlign: 'middle', display: 'inline-block' }}>
+                                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                                  <polyline points="15 3 21 3 21 9" />
+                                  <line x1="10" y1="14" x2="21" y2="3" />
+                                </svg>
+                              </span>
                             )}
                           </div>
                         </div>
+                        {/* Show modal trigger button */}
+                        {isLightbox && (
+                          <button
+                            type="button"
+                            className="cg_portfolio_pb__show-modal-trigger"
+                            aria-label="Open gallery modal"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              // Toggle overlay visibility in visual builder
+                              setHiddenOverlays(prev => ({ ...prev, [post.id]: false }));
+                            }}
+                          >
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" stroke-linecap="round" stroke-linejoin="round">
+                              <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
+                            </svg>
+                          </button>
+                        )}
                       </div>
                     </div>
                   );

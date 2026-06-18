@@ -112,6 +112,7 @@
             "priority": 20,
             "render": true,
             "label": "Posts Number",
+            "description": "Select the number of posts to display in the grid.",
             "component": {
               "name": "divi/range",
               "type": "field",
@@ -281,6 +282,33 @@
             "description": "Customize the text of the Load More button.",
             "component": {
               "name": "divi/text",
+              "type": "field"
+            }
+          }
+        }
+      }
+    },
+    "openInNewTab": {
+      "type": "object",
+      "default": {
+        "innerContent": {
+          "desktop": {
+            "value": "off"
+          }
+        }
+      },
+      "settings": {
+        "innerContent": {
+          "groupType": "group-item",
+          "item": {
+            "groupSlug": "portfolioSettingsGroup",
+            "attrName": "openInNewTab.innerContent",
+            "priority": 80,
+            "render": true,
+            "label": "Open Links in New Tab",
+            "description": "Open external and custom post links in a new tab.",
+            "component": {
+              "name": "divi/toggle",
               "type": "field"
             }
           }
