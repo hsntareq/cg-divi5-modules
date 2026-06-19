@@ -402,7 +402,7 @@ const initPortfolioPB = () => {
                 video.src = streamUrl;
                 video.autoplay = true;
                 video.muted = true;
-                video.loop = false;
+                video.loop = true;
                 video.setAttribute('playsinline', 'true');
                 video.setAttribute('muted', 'true');
                 video.style.width = '100%';
@@ -412,10 +412,6 @@ const initPortfolioPB = () => {
                 video.style.top = '0';
                 video.style.left = '0';
                 video.style.zIndex = '1';
-
-                video.addEventListener('ended', () => {
-                  playSingleVideo(null); // Stop and remove on ended
-                });
 
                 thumbWrapper.appendChild(video);
               }
@@ -439,6 +435,14 @@ const initPortfolioPB = () => {
                   u.searchParams.set('muted', '1');
                   if (videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be')) {
                     u.searchParams.set('enablejsapi', '1');
+                    u.searchParams.set('loop', '1');
+                    const ytIdMatch = videoUrl.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
+                    if (ytIdMatch && ytIdMatch[1]) {
+                      u.searchParams.set('playlist', ytIdMatch[1]);
+                    }
+                  }
+                  if (videoUrl.includes('vimeo.com')) {
+                    u.searchParams.set('loop', '1');
                   }
                   if (videoUrl.includes('drive.google.com')) {
                     const fileId = getGoogleDriveFileId(videoUrl);
@@ -451,7 +455,14 @@ const initPortfolioPB = () => {
                 } catch (e) {
                   let extra = `autoplay=${autoplayVal}&mute=1&muted=1`;
                   if (videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be')) {
-                    extra += '&enablejsapi=1';
+                    extra += '&enablejsapi=1&loop=1';
+                    const ytIdMatch = videoUrl.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
+                    if (ytIdMatch && ytIdMatch[1]) {
+                      extra += `&playlist=${ytIdMatch[1]}`;
+                    }
+                  }
+                  if (videoUrl.includes('vimeo.com')) {
+                    extra += '&loop=1';
                   }
                   if (videoUrl.includes('drive.google.com')) {
                     const fileId = getGoogleDriveFileId(videoUrl);
@@ -501,6 +512,20 @@ const initPortfolioPB = () => {
       // Viewport autoplay is disabled to prevent videos from automatically ending on a black screen
     };
 
+    const autoPlayFirstVideo = () => {
+      let firstVideoCard: HTMLElement | null = null;
+      for (const cardNode of cards) {
+        const card = cardNode as HTMLElement;
+        if (card.classList.contains('cg_portfolio_pb__card--video') && card.style.display !== 'none') {
+          firstVideoCard = card;
+          break;
+        }
+      }
+      if (firstVideoCard) {
+        playSingleVideo(firstVideoCard);
+      }
+    };
+
     const observer = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
         const card = entry.target as HTMLElement;
@@ -526,11 +551,7 @@ const initPortfolioPB = () => {
 
       const video = card.querySelector('.cg_portfolio_pb__thumbnail-wrapper video') as HTMLVideoElement;
       if (video) {
-        video.addEventListener('ended', () => {
-          video.currentTime = 0;
-          video.pause();
-          card.classList.remove('cg_portfolio_pb__card--playing');
-        });
+        video.loop = true;
       }
     });
 
@@ -734,6 +755,7 @@ const initPortfolioPB = () => {
 
         grid.classList.remove('filtering');
         updateViewportPlayback();
+        autoPlayFirstVideo();
       }, 150);
     };
 
@@ -1111,20 +1133,14 @@ window.addEventListener('message', (e) => {
 
   // YouTube ended: onStateChange with info === 0 (ended)
   if (data.event === 'onStateChange' && data.info === 0) {
-    const card = targetIframe.closest('.cg_portfolio_pb__card');
-    if (card) {
-      card.classList.remove('cg_portfolio_pb__card--playing');
-    }
-    targetIframe.remove();
+    targetIframe.contentWindow?.postMessage(JSON.stringify({ event: 'command', func: 'seekTo', args: [0, true] }), '*');
+    targetIframe.contentWindow?.postMessage(JSON.stringify({ event: 'command', func: 'playVideo', args: '' }), '*');
   }
 
   // Vimeo ended: event === 'finish'
   if (data.event === 'finish') {
-    const card = targetIframe.closest('.cg_portfolio_pb__card');
-    if (card) {
-      card.classList.remove('cg_portfolio_pb__card--playing');
-    }
-    targetIframe.remove();
+    targetIframe.contentWindow?.postMessage(JSON.stringify({ method: 'seekTo', value: 0 }), '*');
+    targetIframe.contentWindow?.postMessage(JSON.stringify({ method: 'play' }), '*');
   }
 });
 
