@@ -529,7 +529,7 @@ const initPortfolioPB = () => {
         }
 
         // Collect all matched cards to filter
-        const matchedCards: HTMLElement[] = [];
+        let matchedCards: HTMLElement[] = [];
         cards.forEach((cardNode) => {
           const card = cardNode as HTMLElement;
           const categoriesAttr = card.getAttribute('data-categories') || '';
@@ -562,6 +562,11 @@ const initPortfolioPB = () => {
           }
         });
 
+        // Shuffle the matched cards if the active tab is 'all'
+        if (activeCatId === 'all') {
+          matchedCards = [...matchedCards].sort(() => Math.random() - 0.5);
+        }
+
         // Determine how many cards to show dynamically to fill the row
         let cardsToShow = 0;
         const totalMatched = matchedCards.length;
@@ -585,12 +590,20 @@ const initPortfolioPB = () => {
           }
         }
 
-        // Set card display states
-        matchedCards.forEach((card, idx) => {
-          if (idx < cardsToShow) {
+        // Set card display states and visual order
+        cards.forEach((cardNode) => {
+          const card = cardNode as HTMLElement;
+          const matchedIdx = matchedCards.indexOf(card);
+          if (matchedIdx >= 0 && matchedIdx < cardsToShow) {
             card.style.display = 'block';
+            if (activeCatId === 'all') {
+              card.style.order = matchedIdx.toString();
+            } else {
+              card.style.order = '';
+            }
           } else {
             card.style.display = 'none';
+            card.style.order = '';
           }
         });
 
