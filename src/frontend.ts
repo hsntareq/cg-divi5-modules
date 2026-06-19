@@ -357,6 +357,15 @@ const pauseIframe = (iframe: HTMLIFrameElement) => {
   }
 };
 
+const getGoogleDriveVideoDuration = (fileId: string): number => {
+  const durations: Record<string, number> = {
+    '1DuSYKkU3K_QrhnbkedkYpB-agocdVWIh': 51,
+    '1934LX8ZRS99Rj7sMsP_UYkRhujvxFMKp': 21,
+    '1S0dOPB7HNw7JSt9p5PC29XrkSssvjNSG': 33,
+  };
+  return (durations[fileId] || 30) * 1000;
+};
+
 const initPortfolioPB = () => {
   const wrappers = document.querySelectorAll('.cg_portfolio_pb__wrapper');
 
@@ -394,6 +403,11 @@ const initPortfolioPB = () => {
 
           const videoUrl = card.getAttribute('href');
           if (videoUrl && videoUrl !== '#') {
+            const oldTimer = card.getAttribute('data-loop-timer-id');
+            if (oldTimer) {
+              clearInterval(parseInt(oldTimer, 10));
+              card.removeAttribute('data-loop-timer-id');
+            }
             if (isDirectVideo(videoUrl)) {
               let video = thumbWrapper.querySelector('video');
               if (!video) {
@@ -488,6 +502,22 @@ const initPortfolioPB = () => {
                 iframe.style.zIndex = '1';
 
                 thumbWrapper.appendChild(iframe);
+
+                if (videoUrl.includes('drive.google.com')) {
+                  const fileId = getGoogleDriveFileId(videoUrl);
+                  const durationMs = getGoogleDriveVideoDuration(fileId);
+                  const timerId = setInterval(() => {
+                    const activeIframe = thumbWrapper.querySelector('iframe');
+                    if (activeIframe) {
+                      const currentSrc = activeIframe.getAttribute('src') || '';
+                      activeIframe.setAttribute('src', '');
+                      setTimeout(() => {
+                        activeIframe.setAttribute('src', currentSrc);
+                      }, 50);
+                    }
+                  }, durationMs);
+                  card.setAttribute('data-loop-timer-id', timerId.toString());
+                }
               } else {
                 playIframe(iframe);
               }
@@ -495,6 +525,11 @@ const initPortfolioPB = () => {
           }
         } else {
           card.classList.remove('cg_portfolio_pb__card--playing');
+          const oldTimer = card.getAttribute('data-loop-timer-id');
+          if (oldTimer) {
+            clearInterval(parseInt(oldTimer, 10));
+            card.removeAttribute('data-loop-timer-id');
+          }
           const video = thumbWrapper.querySelector('video');
           if (video) {
             video.pause();
