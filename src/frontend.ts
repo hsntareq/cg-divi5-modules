@@ -534,7 +534,7 @@ const initPortfolioPB = () => {
       }
     });
 
-    // Bind mouseenter & mouseleave events to each video card
+    // Bind mouseenter event to each video card
     cards.forEach((cardNode) => {
       const card = cardNode as HTMLElement;
       if (!card.classList.contains('cg_portfolio_pb__card--video')) return;
@@ -542,11 +542,6 @@ const initPortfolioPB = () => {
       card.addEventListener('mouseenter', () => {
         if (card.style.display === 'none') return;
         playSingleVideo(card);
-      });
-
-      card.addEventListener('mouseleave', () => {
-        if (card.style.display === 'none') return;
-        playSingleVideo(null);
       });
     });
 
