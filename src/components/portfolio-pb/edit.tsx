@@ -29,9 +29,6 @@ const isDirectVideo = (url: string): boolean => {
   if (/\.(mp4|webm|ogg|ogv)(\?|$)/i.test(url)) {
     return true;
   }
-  if (url.includes('drive.google.com')) {
-    return true;
-  }
   return false;
 };
 

@@ -55,9 +55,6 @@ trait RenderCallbackTrait {
 		if ( preg_match( '/\.(mp4|webm|ogg|ogv)(\?|$)/i', $url ) ) {
 			return true;
 		}
-		if ( strpos( $url, 'drive.google.com' ) !== false ) {
-			return true;
-		}
 		return false;
 	}
 
