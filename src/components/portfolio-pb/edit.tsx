@@ -499,7 +499,18 @@ export const PortfolioPBEdit = (props: PortfolioPBEditProps): ReactElement => {
                   return (
                     <div key={post.id} className={cardClasses.join(' ')}>
                       <div className="cg_portfolio_pb__thumbnail-wrapper">
-                        {isVideoCard ? (
+                        {imgUrl ? (
+                          <img
+                            src={imgUrl}
+                            alt={titleText}
+                            className="cg_portfolio_pb__thumbnail"
+                          />
+                        ) : (
+                          <div className="cg_portfolio_pb__thumbnail-placeholder">
+                            <span className="placeholder-icon">🖼️</span>
+                          </div>
+                        )}
+                        {isVideoCard && (
                           isDirect ? (
                             <video
                               src={getVideoStreamUrl(mutedUrl)}
@@ -518,18 +529,6 @@ export const PortfolioPBEdit = (props: PortfolioPBEditProps): ReactElement => {
                               allow="autoplay; fullscreen"
                               allowFullScreen
                             />
-                          )
-                        ) : (
-                          imgUrl ? (
-                            <img
-                              src={imgUrl}
-                              alt={titleText}
-                              className="cg_portfolio_pb__thumbnail"
-                            />
-                          ) : (
-                            <div className="cg_portfolio_pb__thumbnail-placeholder">
-                              <span className="placeholder-icon">🖼️</span>
-                            </div>
                           )
                         )}
                         {/* Hover Overlay - always rendered so it sits on top of the iframe/thumbnail */}

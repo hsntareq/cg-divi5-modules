@@ -436,40 +436,6 @@ trait RenderCallbackTrait {
 
 				$iframe_html = '';
 				$thumbnail_html = $thumbnail;
-				if ( $is_video_card ) {
-					$video_url = get_post_meta( $post_id, 'portfolio_pb_video_url', true );
-					if ( ! empty( $video_url ) ) {
-						if ( self::is_direct_video( $video_url ) ) {
-							$stream_url = self::get_video_stream_url( $video_url );
-							$autoplay_attr = $is_first_video ? ' autoplay' : '';
-							$iframe_html = sprintf(
-								'<video src="%s" width="640" height="480"%s muted playsinline style="width: 100%%; height: 100%%; object-fit: cover;"></video>',
-								esc_url( $stream_url ),
-								$autoplay_attr
-							);
-						} else {
-							$embed_url = $video_url;
-							$query_args = [ 'autoplay' => $is_first_video ? 1 : 0, 'mute' => 1, 'muted' => 1 ];
-							if ( strpos( $video_url, 'youtube.com' ) !== false || strpos( $video_url, 'youtu.be' ) !== false ) {
-								$query_args['enablejsapi'] = 1;
-							}
-							if ( strpos( $video_url, 'drive.google.com' ) !== false ) {
-								$embed_url = self::get_google_drive_preview_url( $video_url );
-								$file_id = self::get_google_drive_file_id( $video_url );
-								if ( ! empty( $file_id ) ) {
-									$query_args['loop'] = 1;
-									$query_args['playlist'] = $file_id;
-								}
-							}
-							$muted_url = add_query_arg( $query_args, $embed_url );
-							$iframe_html = sprintf(
-								'<iframe src="%s" width="640" height="480" frameborder="0" allow="autoplay; fullscreen" allowfullscreen="true" style="position: absolute; top: 0; left: 0; width: 100%%; height: 100%%; border: none; z-index: 1;"></iframe>',
-								esc_url( $muted_url )
-							);
-						}
-					}
-					$thumbnail_html = '';
-				}
 
 				// Hover Overlay
 				$overlay = sprintf(

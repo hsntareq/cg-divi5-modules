@@ -394,33 +394,107 @@ const initPortfolioPB = () => {
         
         if (isTarget) {
           card.classList.add('cg_portfolio_pb__card--playing');
+
+          const videoUrl = card.getAttribute('href');
+          if (videoUrl && videoUrl !== '#') {
+            if (isDirectVideo(videoUrl)) {
+              let video = thumbWrapper.querySelector('video');
+              if (!video) {
+                const streamUrl = getVideoStreamUrl(videoUrl);
+                video = document.createElement('video');
+                video.src = streamUrl;
+                video.autoplay = true;
+                video.muted = true;
+                video.loop = false;
+                video.setAttribute('playsinline', 'true');
+                video.setAttribute('muted', 'true');
+                video.style.width = '100%';
+                video.style.height = '100%';
+                video.style.objectFit = 'cover';
+                video.style.position = 'absolute';
+                video.style.top = '0';
+                video.style.left = '0';
+                video.style.zIndex = '1';
+
+                video.addEventListener('ended', () => {
+                  playSingleVideo(null); // Stop and remove on ended
+                });
+
+                thumbWrapper.appendChild(video);
+              }
+              if (video.paused) {
+                video.play().catch((err) => {
+                  console.log('Video play failed on hover:', err);
+                });
+              }
+            } else {
+              let iframe = thumbWrapper.querySelector('iframe');
+              if (!iframe) {
+                let mutedUrl = videoUrl;
+                if (videoUrl.includes('drive.google.com')) {
+                  mutedUrl = getGoogleDrivePreviewUrl(videoUrl);
+                }
+                const autoplayVal = '1';
+                try {
+                  const u = new URL(mutedUrl);
+                  u.searchParams.set('autoplay', autoplayVal);
+                  u.searchParams.set('mute', '1');
+                  u.searchParams.set('muted', '1');
+                  if (videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be')) {
+                    u.searchParams.set('enablejsapi', '1');
+                  }
+                  if (videoUrl.includes('drive.google.com')) {
+                    const fileId = getGoogleDriveFileId(videoUrl);
+                    if (fileId) {
+                      u.searchParams.set('loop', '1');
+                      u.searchParams.set('playlist', fileId);
+                    }
+                  }
+                  mutedUrl = u.toString();
+                } catch (e) {
+                  let extra = `autoplay=${autoplayVal}&mute=1&muted=1`;
+                  if (videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be')) {
+                    extra += '&enablejsapi=1';
+                  }
+                  if (videoUrl.includes('drive.google.com')) {
+                    const fileId = getGoogleDriveFileId(videoUrl);
+                    if (fileId) {
+                      extra += `&loop=1&playlist=${fileId}`;
+                    }
+                  }
+                  mutedUrl = mutedUrl + (mutedUrl.indexOf('?') >= 0 ? '&' : '?') + extra;
+                }
+                iframe = document.createElement('iframe');
+                iframe.setAttribute('src', mutedUrl);
+                iframe.setAttribute('width', '640');
+                iframe.setAttribute('height', '480');
+                iframe.setAttribute('frameborder', '0');
+                iframe.setAttribute('allow', 'autoplay; fullscreen');
+                iframe.setAttribute('allowfullscreen', 'true');
+                iframe.style.position = 'absolute';
+                iframe.style.top = '0';
+                iframe.style.left = '0';
+                iframe.style.width = '100%';
+                iframe.style.height = '100%';
+                iframe.style.border = 'none';
+                iframe.style.zIndex = '1';
+
+                thumbWrapper.appendChild(iframe);
+              } else {
+                playIframe(iframe);
+              }
+            }
+          }
         } else {
           card.classList.remove('cg_portfolio_pb__card--playing');
-        }
-
-        const video = thumbWrapper.querySelector('video');
-        if (video) {
-          video.muted = true; // Ensure it is muted
-          if (isTarget) {
-            if (video.paused) {
-              video.play().catch((err) => {
-                console.log('Video play failed on hover:', err);
-              });
-            }
-          } else {
-            if (!video.paused) {
-              video.pause();
-            }
-            video.currentTime = 0;
+          const video = thumbWrapper.querySelector('video');
+          if (video) {
+            video.pause();
+            video.remove();
           }
-        }
-
-        const iframe = thumbWrapper.querySelector('iframe');
-        if (iframe) {
-          if (isTarget) {
-            playIframe(iframe);
-          } else {
-            pauseIframe(iframe);
+          const iframe = thumbWrapper.querySelector('iframe');
+          if (iframe) {
+            iframe.remove();
           }
         }
       });
@@ -633,149 +707,24 @@ const initPortfolioPB = () => {
           emptyMsg.style.display = 'none';
         }
 
-        // Identify the first visible video card
-        let firstVisibleVideoCard: HTMLElement | null = null;
-        cards.forEach((cardNode) => {
-          const card = cardNode as HTMLElement;
-          if (!card.classList.contains('cg_portfolio_pb__card--video')) return;
-          if (card.style.display !== 'none' && !firstVisibleVideoCard) {
-            firstVisibleVideoCard = card;
-          }
-        });
-
         // Toggle iframe/video injection and sizing for all video cards
         cards.forEach((cardNode) => {
           const card = cardNode as HTMLElement;
           if (!card.classList.contains('cg_portfolio_pb__card--video')) return;
 
           const isVisibleVideo = (card.style.display !== 'none');
-          const isFirstVideo = false;
           const thumbWrapper = card.querySelector('.cg_portfolio_pb__thumbnail-wrapper') as HTMLElement;
 
           if (isVisibleVideo) {
             card.classList.add('cg_portfolio_pb__card--video-active');
-            if (isFirstVideo) {
-              card.classList.add('cg_portfolio_pb__card--playing');
-            } else {
-              card.classList.remove('cg_portfolio_pb__card--playing');
-            }
+            card.classList.remove('cg_portfolio_pb__card--playing');
 
-            const videoUrl = card.getAttribute('href');
-            if (videoUrl && videoUrl !== '#') {
-              if (isDirectVideo(videoUrl)) {
-                if (thumbWrapper) {
-                  const iframe = thumbWrapper.querySelector('iframe');
-                  if (iframe) iframe.remove();
-
-                  const existingVideo = thumbWrapper.querySelector('video');
-                  if (!existingVideo) {
-                    const streamUrl = getVideoStreamUrl(videoUrl);
-                    const video = document.createElement('video');
-                    video.src = streamUrl;
-                    video.autoplay = isFirstVideo;
-                    video.muted = true;
-                    video.loop = false;
-                    video.setAttribute('playsinline', 'true');
-                    video.setAttribute('muted', 'true');
-                    video.style.width = '100%';
-                    video.style.height = '100%';
-                    video.style.objectFit = 'cover';
-                    video.style.position = 'absolute';
-                    video.style.top = '0';
-                    video.style.left = '0';
-                    video.style.zIndex = '1';
-
-                    video.addEventListener('ended', () => {
-                      video.currentTime = 0;
-                      video.pause();
-                      card.classList.remove('cg_portfolio_pb__card--playing');
-                    });
-
-                    thumbWrapper.appendChild(video);
-                    if (isFirstVideo) {
-                      video.play().catch((err) => {
-                        console.log('Autoplay failed to trigger:', err);
-                      });
-                    }
-                  } else {
-                    if (isFirstVideo) {
-                      if (existingVideo.paused) {
-                        existingVideo.play().catch((err) => {
-                          console.log('Video play failed to resume:', err);
-                        });
-                      }
-                    } else {
-                      if (!existingVideo.paused) {
-                        existingVideo.pause();
-                      }
-                    }
-                  }
-                }
-              } else {
-                if (thumbWrapper) {
-                  const video = thumbWrapper.querySelector('video');
-                  if (video) video.remove();
-
-                  const existingIframe = thumbWrapper.querySelector('iframe');
-                  if (!existingIframe) {
-                    let mutedUrl = videoUrl;
-                    if (videoUrl.includes('drive.google.com')) {
-                      mutedUrl = getGoogleDrivePreviewUrl(videoUrl);
-                    }
-                    const autoplayVal = isFirstVideo ? '1' : '0';
-                    try {
-                      const u = new URL(mutedUrl);
-                      u.searchParams.set('autoplay', autoplayVal);
-                      u.searchParams.set('mute', '1');
-                      u.searchParams.set('muted', '1');
-                      if (videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be')) {
-                        u.searchParams.set('enablejsapi', '1');
-                      }
-                      if (videoUrl.includes('drive.google.com')) {
-                        const fileId = getGoogleDriveFileId(videoUrl);
-                        if (fileId) {
-                          u.searchParams.set('loop', '1');
-                          u.searchParams.set('playlist', fileId);
-                        }
-                      }
-                      mutedUrl = u.toString();
-                    } catch (e) {
-                      let extra = `autoplay=${autoplayVal}&mute=1&muted=1`;
-                      if (videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be')) {
-                        extra += '&enablejsapi=1';
-                      }
-                      if (videoUrl.includes('drive.google.com')) {
-                        const fileId = getGoogleDriveFileId(videoUrl);
-                        if (fileId) {
-                          extra += `&loop=1&playlist=${fileId}`;
-                        }
-                      }
-                      mutedUrl = mutedUrl + (mutedUrl.indexOf('?') >= 0 ? '&' : '?') + extra;
-                    }
-                    const iframe = document.createElement('iframe');
-                    iframe.setAttribute('src', mutedUrl);
-                    iframe.setAttribute('width', '640');
-                    iframe.setAttribute('height', '480');
-                    iframe.setAttribute('frameborder', '0');
-                    iframe.setAttribute('allow', 'autoplay; fullscreen');
-                    iframe.setAttribute('allowfullscreen', 'true');
-                    iframe.style.position = 'absolute';
-                    iframe.style.top = '0';
-                    iframe.style.left = '0';
-                    iframe.style.width = '100%';
-                    iframe.style.height = '100%';
-                    iframe.style.border = 'none';
-                    iframe.style.zIndex = '1';
-                    thumbWrapper.appendChild(iframe);
-                  } else {
-                    if (isFirstVideo) {
-                      playIframe(existingIframe);
-                    } else {
-                      pauseIframe(existingIframe);
-                    }
-                  }
-                }
-              }
+            // Remove any leftover video/iframe elements if there are any
+            if (thumbWrapper) {
+              const video = thumbWrapper.querySelector('video');
+              if (video) video.remove();
+              const iframe = thumbWrapper.querySelector('iframe');
+              if (iframe) iframe.remove();
             }
           } else {
             card.classList.remove('cg_portfolio_pb__card--video-active');
@@ -784,13 +733,9 @@ const initPortfolioPB = () => {
             // Remove iframe and video if present
             if (thumbWrapper) {
               const iframe = thumbWrapper.querySelector('iframe');
-              if (iframe) {
-                iframe.remove();
-              }
+              if (iframe) iframe.remove();
               const video = thumbWrapper.querySelector('video');
-              if (video) {
-                video.remove();
-              }
+              if (video) video.remove();
             }
           }
         });
@@ -1174,22 +1119,20 @@ window.addEventListener('message', (e) => {
 
   // YouTube ended: onStateChange with info === 0 (ended)
   if (data.event === 'onStateChange' && data.info === 0) {
-    targetIframe.contentWindow?.postMessage(JSON.stringify({ event: 'command', func: 'seekTo', args: [0, true] }), '*');
-    targetIframe.contentWindow?.postMessage(JSON.stringify({ event: 'command', func: 'pauseVideo', args: '' }), '*');
     const card = targetIframe.closest('.cg_portfolio_pb__card');
     if (card) {
       card.classList.remove('cg_portfolio_pb__card--playing');
     }
+    targetIframe.remove();
   }
 
   // Vimeo ended: event === 'finish'
   if (data.event === 'finish') {
-    targetIframe.contentWindow?.postMessage(JSON.stringify({ method: 'seekTo', value: 0 }), '*');
-    targetIframe.contentWindow?.postMessage(JSON.stringify({ method: 'pause' }), '*');
     const card = targetIframe.closest('.cg_portfolio_pb__card');
     if (card) {
       card.classList.remove('cg_portfolio_pb__card--playing');
     }
+    targetIframe.remove();
   }
 });
 

@@ -200,7 +200,24 @@
 
   .cg_portfolio_pb__thumbnail,
   .cg_portfolio_pb__thumbnail-placeholder {
+    display: block;
+  }
+
+  video,
+  iframe {
     display: none !important;
+  }
+
+  &.cg_portfolio_pb__card--playing {
+    .cg_portfolio_pb__thumbnail,
+    .cg_portfolio_pb__thumbnail-placeholder {
+      display: none !important;
+    }
+
+    video,
+    iframe {
+      display: block !important;
+    }
   }
 
   .cg_portfolio_pb__overlay {
