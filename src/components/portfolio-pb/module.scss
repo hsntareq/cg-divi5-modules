@@ -250,6 +250,14 @@
     width: 100% !important;
     height: 100% !important;
     z-index: 1;
+
+    &.cg_portfolio_pb__iframe--gdrive {
+      width: calc(100% + 40px) !important;
+      max-width: none !important;
+      left: -20px !important;
+      top: -60px !important;
+      height: calc(100% + 110px) !important;
+    }
   }
 }
 

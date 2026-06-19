@@ -488,11 +488,14 @@ const initPortfolioPB = () => {
                 }
                 iframe = document.createElement('iframe');
                 iframe.setAttribute('src', mutedUrl);
-                iframe.setAttribute('width', '640');
-                iframe.setAttribute('height', '480');
+                iframe.setAttribute('width', '100%');
+                iframe.setAttribute('height', '100%');
                 iframe.setAttribute('frameborder', '0');
                 iframe.setAttribute('allow', 'autoplay; fullscreen');
                 iframe.setAttribute('allowfullscreen', 'true');
+                if (videoUrl.includes('drive.google.com')) {
+                  iframe.classList.add('cg_portfolio_pb__iframe--gdrive');
+                }
                 iframe.style.position = 'absolute';
                 iframe.style.top = '0';
                 iframe.style.left = '0';

@@ -518,14 +518,15 @@ export const PortfolioPBEdit = (props: PortfolioPBEditProps): ReactElement => {
                               style={{ border: 'none', width: '100%', height: '100%', display: 'block', position: 'absolute', top: 0, left: 0, objectFit: 'cover', zIndex: 1 }}
                             />
                           ) : (
-                            <iframe
-                              src={mutedUrl}
-                              width="640"
-                              height="480"
-                              style={{ border: 'none', width: '100%', height: '100%', display: 'block', position: 'absolute', top: 0, left: 0, zIndex: 1 }}
-                              allow="autoplay; fullscreen"
-                              allowFullScreen
-                            />
+                             <iframe
+                               src={mutedUrl}
+                               width="100%"
+                               height="100%"
+                               className={mutedUrl.includes('drive.google.com') ? 'cg_portfolio_pb__iframe--gdrive' : ''}
+                               style={{ border: 'none', display: 'block', position: 'absolute', top: 0, left: 0, zIndex: 1 }}
+                               allow="autoplay; fullscreen"
+                               allowFullScreen
+                             />
                           )
                         )}
                         {/* Hover Overlay - always rendered so it sits on top of the iframe/thumbnail */}
