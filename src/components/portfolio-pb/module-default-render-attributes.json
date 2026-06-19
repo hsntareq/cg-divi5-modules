@@ -65,6 +65,13 @@
       }
     }
   },
+  "pauseOnTabSwitch": {
+    "innerContent": {
+      "desktop": {
+        "value": "on"
+      }
+    }
+  },
   "activeColor": {
     "innerContent": {
       "desktop": {

@@ -106,6 +106,14 @@ export interface PortfolioPBAttrs extends InternalAttrs {
     };
   };
 
+  pauseOnTabSwitch?: {
+    innerContent?: {
+      desktop?: {
+        value: string;
+      };
+    };
+  };
+
   activeColor?: {
     innerContent?: {
       desktop?: {

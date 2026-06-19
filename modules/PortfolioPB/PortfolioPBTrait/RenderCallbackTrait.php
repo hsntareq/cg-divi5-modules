@@ -55,6 +55,9 @@ trait RenderCallbackTrait {
 		if ( preg_match( '/\.(mp4|webm|ogg|ogv)(\?|$)/i', $url ) ) {
 			return true;
 		}
+		if ( strpos( $url, 'drive.google.com' ) !== false ) {
+			return true;
+		}
 		return false;
 	}
 
@@ -144,6 +147,7 @@ trait RenderCallbackTrait {
 		$load_more_text     = self::get_attr_value( $attrs['loadMoreText'] ?? null, 'Load More' );
 		$active_color       = self::get_attr_value( $attrs['activeColor'] ?? null, '#7e22ce' );
 		$open_in_new_tab    = self::get_attr_value( $attrs['openInNewTab'] ?? null, 'off' );
+		$pause_on_tab_switch = self::get_attr_value( $attrs['pauseOnTabSwitch'] ?? null, 'on' );
 		$fill_row           = self::get_attr_value( $attrs['fillRow'] ?? null, 'off' );
 		$module_id          = $block->parsed_block['id'] ?? uniqid();
 
@@ -456,7 +460,7 @@ trait RenderCallbackTrait {
 							$stream_url = self::get_video_stream_url( $video_url );
 							$autoplay_attr = $is_first_video ? ' autoplay' : '';
 							$iframe_html = sprintf(
-								'<video src="%s" width="640" height="480"%s muted loop playsinline style="width: 100%%; height: 100%%; object-fit: cover;"></video>',
+								'<video src="%s" width="640" height="480"%s muted playsinline style="width: 100%%; height: 100%%; object-fit: cover;"></video>',
 								esc_url( $stream_url ),
 								$autoplay_attr
 							);
@@ -676,7 +680,7 @@ trait RenderCallbackTrait {
 		$grid_class_extra = '';
 
 		$content_html = sprintf(
-			'<div class="cg_portfolio_pb__wrapper" style="%s">
+			'<div class="cg_portfolio_pb__wrapper" style="%s" data-pause-on-tab-switch="%s">
 				<div class="cg_portfolio_pb__tabs-container">
 					%s
 				</div>
@@ -687,6 +691,7 @@ trait RenderCallbackTrait {
 				%s
 			</div>',
 			$inline_styles,
+			esc_attr( $pause_on_tab_switch ),
 			$tabs_html,
 			$radios_html,
 			esc_attr( $grid_columns ),

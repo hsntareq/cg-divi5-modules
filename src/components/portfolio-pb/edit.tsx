@@ -29,6 +29,9 @@ const isDirectVideo = (url: string): boolean => {
   if (/\.(mp4|webm|ogg|ogv)(\?|$)/i.test(url)) {
     return true;
   }
+  if (url.includes('drive.google.com')) {
+    return true;
+  }
   return false;
 };
 
@@ -87,6 +90,7 @@ export const PortfolioPBEdit = (props: PortfolioPBEditProps): ReactElement => {
   const loadMoreText = getAttrValue(attrs?.loadMoreText, 'Load More');
   const activeColor = getAttrValue(attrs?.activeColor, '#7e22ce');
   const openInNewTab = getAttrValue(attrs?.openInNewTab, 'off');
+  const pauseOnTabSwitch = getAttrValue(attrs?.pauseOnTabSwitch, 'on');
   const fillRow = getAttrValue(attrs?.fillRow, 'off');
 
   // React state for fetched data & filters
@@ -333,7 +337,7 @@ export const PortfolioPBEdit = (props: PortfolioPBEditProps): ReactElement => {
         attrName: 'module',
       })}
 
-      <div className="cg_portfolio_pb__wrapper cg_portfolio_pb_parent" style={inlineStyles} data-is-builder="true">
+      <div className="cg_portfolio_pb__wrapper cg_portfolio_pb_parent" style={inlineStyles} data-is-builder="true" data-pause-on-tab-switch={pauseOnTabSwitch}>
         {/* Category Tabs */}
         <div className="cg_portfolio_pb__tabs-container">
           <button
@@ -504,7 +508,7 @@ export const PortfolioPBEdit = (props: PortfolioPBEditProps): ReactElement => {
                               src={getVideoStreamUrl(mutedUrl)}
                               autoPlay={false}
                               muted={true}
-                              loop={true}
+                              loop={false}
                               playsInline={true}
                               style={{ border: 'none', width: '100%', height: '100%', display: 'block', position: 'absolute', top: 0, left: 0, objectFit: 'cover', zIndex: 1 }}
                             />

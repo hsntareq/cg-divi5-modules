@@ -260,6 +260,9 @@ const isDirectVideo = (url: string): boolean => {
   if (/\.(mp4|webm|ogg|ogv)(\?|$)/i.test(url)) {
     return true;
   }
+  if (url.includes('drive.google.com')) {
+    return true;
+  }
   return false;
 };
 
@@ -408,6 +411,7 @@ const initPortfolioPB = () => {
             if (!video.paused) {
               video.pause();
             }
+            video.currentTime = 0;
           }
         }
 
@@ -468,7 +472,22 @@ const initPortfolioPB = () => {
       }
     });
 
-    // Bind mouseenter event to each video card
+    // Attach ended listener to existing video elements printed by PHP
+    cards.forEach((cardNode) => {
+      const card = cardNode as HTMLElement;
+      if (!card.classList.contains('cg_portfolio_pb__card--video')) return;
+
+      const video = card.querySelector('.cg_portfolio_pb__thumbnail-wrapper video') as HTMLVideoElement;
+      if (video) {
+        video.addEventListener('ended', () => {
+          video.currentTime = 0;
+          video.pause();
+          card.classList.remove('cg_portfolio_pb__card--playing');
+        });
+      }
+    });
+
+    // Bind mouseenter & mouseleave events to each video card
     cards.forEach((cardNode) => {
       const card = cardNode as HTMLElement;
       if (!card.classList.contains('cg_portfolio_pb__card--video')) return;
@@ -476,6 +495,11 @@ const initPortfolioPB = () => {
       card.addEventListener('mouseenter', () => {
         if (card.style.display === 'none') return;
         playSingleVideo(card);
+      });
+
+      card.addEventListener('mouseleave', () => {
+        if (card.style.display === 'none') return;
+        playSingleVideo(null);
       });
     });
 
@@ -674,7 +698,7 @@ const initPortfolioPB = () => {
                     video.src = streamUrl;
                     video.autoplay = isFirstVideo;
                     video.muted = true;
-                    video.loop = true;
+                    video.loop = false;
                     video.setAttribute('playsinline', 'true');
                     video.setAttribute('muted', 'true');
                     video.style.width = '100%';
@@ -684,6 +708,13 @@ const initPortfolioPB = () => {
                     video.style.top = '0';
                     video.style.left = '0';
                     video.style.zIndex = '1';
+
+                    video.addEventListener('ended', () => {
+                      video.currentTime = 0;
+                      video.pause();
+                      card.classList.remove('cg_portfolio_pb__card--playing');
+                    });
+
                     thumbWrapper.appendChild(video);
                     if (isFirstVideo) {
                       video.play().catch((err) => {
@@ -886,6 +917,32 @@ const initPortfolioPB = () => {
         filterCards(activeCatId, activeSubcatId);
       });
     }
+
+    // Custom events for visibility pausing/resuming
+    wrapper.addEventListener('cg-pause-playback', () => {
+      // Find currently playing card in this wrapper
+      const currentPlaying = wrapper.querySelector('.cg_portfolio_pb__card--playing') as HTMLElement;
+      if (currentPlaying) {
+        const index = Array.from(cards).indexOf(currentPlaying);
+        wrapper.dataset.lastPlayingIndex = index.toString();
+      } else {
+        delete wrapper.dataset.lastPlayingIndex;
+      }
+      playSingleVideo(null);
+    });
+
+    wrapper.addEventListener('cg-resume-playback', () => {
+      const lastIndexStr = wrapper.dataset.lastPlayingIndex;
+      if (lastIndexStr !== undefined) {
+        const lastIndex = parseInt(lastIndexStr, 10);
+        const card = cards[lastIndex] as HTMLElement;
+        if (card && card.style.display !== 'none' && card.dataset.isIntersecting === 'true') {
+          playSingleVideo(card);
+          return;
+        }
+      }
+      updateViewportPlayback();
+    });
 
     // Initialize filter state once on load
     filterCards('all', 'all');
@@ -1094,6 +1151,71 @@ const initLightbox = () => {
     }
   };
 };
+
+// Global tab visibility listener to pause and resume videos
+document.addEventListener('visibilitychange', () => {
+  const isHidden = document.hidden;
+  const wrappers = document.querySelectorAll('.cg_portfolio_pb__wrapper');
+  
+  wrappers.forEach((wrapperNode) => {
+    const wrapper = wrapperNode as HTMLElement;
+    if (wrapper.classList.contains('cg_portfolio_pb_parent') || wrapper.closest('.cg_portfolio_pb_parent') || wrapper.getAttribute('data-is-builder') === 'true') {
+      return;
+    }
+    const pauseOnTabSwitchAttr = wrapper.getAttribute('data-pause-on-tab-switch');
+    const pauseOnTabSwitch = pauseOnTabSwitchAttr !== 'off'; // default is true (on)
+    
+    if (pauseOnTabSwitch) {
+      if (isHidden) {
+        wrapper.dispatchEvent(new CustomEvent('cg-pause-playback'));
+      } else {
+        wrapper.dispatchEvent(new CustomEvent('cg-resume-playback'));
+      }
+    }
+  });
+});
+
+// Reset YouTube / Vimeo iframes to beginning when they finish playing
+window.addEventListener('message', (e) => {
+  let data;
+  try {
+    data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
+  } catch (err) {
+    return;
+  }
+  if (!data) return;
+
+  // Find target iframe
+  const iframes = document.querySelectorAll('.cg_portfolio_pb__thumbnail-wrapper iframe') as NodeListOf<HTMLIFrameElement>;
+  let targetIframe: HTMLIFrameElement | null = null;
+  for (const iframe of iframes) {
+    if (iframe.contentWindow === e.source) {
+      targetIframe = iframe;
+      break;
+    }
+  }
+  if (!targetIframe) return;
+
+  // YouTube ended: onStateChange with info === 0 (ended)
+  if (data.event === 'onStateChange' && data.info === 0) {
+    targetIframe.contentWindow?.postMessage(JSON.stringify({ event: 'command', func: 'seekTo', args: [0, true] }), '*');
+    targetIframe.contentWindow?.postMessage(JSON.stringify({ event: 'command', func: 'pauseVideo', args: '' }), '*');
+    const card = targetIframe.closest('.cg_portfolio_pb__card');
+    if (card) {
+      card.classList.remove('cg_portfolio_pb__card--playing');
+    }
+  }
+
+  // Vimeo ended: event === 'finish'
+  if (data.event === 'finish') {
+    targetIframe.contentWindow?.postMessage(JSON.stringify({ method: 'seekTo', value: 0 }), '*');
+    targetIframe.contentWindow?.postMessage(JSON.stringify({ method: 'pause' }), '*');
+    const card = targetIframe.closest('.cg_portfolio_pb__card');
+    if (card) {
+      card.classList.remove('cg_portfolio_pb__card--playing');
+    }
+  }
+});
 
 const initAll = () => {
   initCarousel();
