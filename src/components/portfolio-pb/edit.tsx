@@ -304,10 +304,7 @@ export const PortfolioPBEdit = (props: PortfolioPBEditProps): ReactElement => {
   }
 
   const slicedPosts = filteredPosts.slice(0, postsToShow);
-  const firstVideoPost = slicedPosts.find(p => {
-    const viewType = p.meta?.portfolio_pb_view_type || 'lightbox';
-    return viewType === 'video';
-  });
+  const firstVideoPost = null;
 
   // Resolve thumbnail image URL helper
   const getPostImageUrl = (post: any): string | null => {

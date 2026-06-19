@@ -326,24 +326,7 @@ trait RenderCallbackTrait {
 
 		// Pre-scan to identify the first video post ID visible in the default "All" tab (within the first posts_to_show)
 		$first_video_id = 0;
-		if ( $query->have_posts() ) {
-			$temp_count = 0;
-			while ( $query->have_posts() ) {
-				$query->the_post();
-				$temp_count++;
-				if ( $temp_count <= $posts_to_show ) {
-					$v_type = get_post_meta( get_the_ID(), 'portfolio_pb_view_type', true );
-					if ( empty( $v_type ) ) {
-						$v_type = 'lightbox';
-					}
-					if ( 'video' === $v_type ) {
-						$first_video_id = get_the_ID();
-						break;
-					}
-				}
-			}
-			$query->rewind_posts();
-		}
+
 
 		if ( $query->have_posts() ) {
 			while ( $query->have_posts() ) {

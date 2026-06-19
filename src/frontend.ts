@@ -427,31 +427,7 @@ const initPortfolioPB = () => {
     };
 
     const updateViewportPlayback = () => {
-      const currentPlaying = wrapper.querySelector('.cg_portfolio_pb__card--playing') as HTMLElement;
-      const isCurrentPlayingVisible = currentPlaying && 
-                                      currentPlaying.style.display !== 'none' && 
-                                      currentPlaying.dataset.isIntersecting === 'true';
-      
-      if (isCurrentPlayingVisible) {
-        return;
-      }
-      
-      let firstIntersectingVideo: HTMLElement | null = null;
-      cards.forEach((cardNode) => {
-        const card = cardNode as HTMLElement;
-        if (!card.classList.contains('cg_portfolio_pb__card--video')) return;
-        if (card.style.display !== 'none' && card.dataset.isIntersecting === 'true') {
-          if (!firstIntersectingVideo) {
-            firstIntersectingVideo = card;
-          }
-        }
-      });
-      
-      if (firstIntersectingVideo) {
-        playSingleVideo(firstIntersectingVideo);
-      } else {
-        playSingleVideo(null);
-      }
+      // Viewport autoplay is disabled to prevent videos from automatically ending on a black screen
     };
 
     const observer = new IntersectionObserver((entries) => {
@@ -673,7 +649,7 @@ const initPortfolioPB = () => {
           if (!card.classList.contains('cg_portfolio_pb__card--video')) return;
 
           const isVisibleVideo = (card.style.display !== 'none');
-          const isFirstVideo = (card === firstVisibleVideoCard);
+          const isFirstVideo = false;
           const thumbWrapper = card.querySelector('.cg_portfolio_pb__thumbnail-wrapper') as HTMLElement;
 
           if (isVisibleVideo) {
