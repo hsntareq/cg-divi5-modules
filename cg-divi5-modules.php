@@ -185,7 +185,7 @@ function cg_portfolio_pb_size_box_callback( $post ) {
 	
 	$view_type = get_post_meta( $post->ID, 'portfolio_pb_view_type', true );
 	if ( empty( $view_type ) ) {
-		$view_type = 'default';
+		$view_type = 'lightbox';
 	}
 	
 	$external_url = get_post_meta( $post->ID, 'portfolio_pb_external_url', true );

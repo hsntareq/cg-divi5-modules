@@ -301,7 +301,7 @@ export const PortfolioPBEdit = (props: PortfolioPBEditProps): ReactElement => {
 
   const slicedPosts = filteredPosts.slice(0, postsToShow);
   const firstVideoPost = slicedPosts.find(p => {
-    const viewType = p.meta?.portfolio_pb_view_type || 'default';
+    const viewType = p.meta?.portfolio_pb_view_type || 'lightbox';
     return viewType === 'video';
   });
 
@@ -425,7 +425,7 @@ export const PortfolioPBEdit = (props: PortfolioPBEditProps): ReactElement => {
                   // Read size from post meta
                   const originalSize = post.meta?.portfolio_pb_size || 'regular';
                   const size = originalSize;
-                  const viewType = post.meta?.portfolio_pb_view_type || 'default';
+                  const viewType = post.meta?.portfolio_pb_view_type || 'lightbox';
                   const isVideoCard = viewType === 'video';
                   const isFirstVideo = !!(firstVideoPost && post.id === firstVideoPost.id);
 

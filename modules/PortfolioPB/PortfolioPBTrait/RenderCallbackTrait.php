@@ -329,6 +329,9 @@ trait RenderCallbackTrait {
 				$temp_count++;
 				if ( $temp_count <= $posts_to_show ) {
 					$v_type = get_post_meta( get_the_ID(), 'portfolio_pb_view_type', true );
+					if ( empty( $v_type ) ) {
+						$v_type = 'lightbox';
+					}
 					if ( 'video' === $v_type ) {
 						$first_video_id = get_the_ID();
 						break;
@@ -387,7 +390,7 @@ trait RenderCallbackTrait {
 				// Click Action View Pattern
 				$view_type = get_post_meta( $post_id, 'portfolio_pb_view_type', true );
 				if ( empty( $view_type ) ) {
-					$view_type = 'default';
+					$view_type = 'lightbox';
 				}
 
 				$is_video_card = ( 'video' === $view_type );
