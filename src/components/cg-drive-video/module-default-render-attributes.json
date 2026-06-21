@@ -1,0 +1,86 @@
+{
+  "videoSourceType": {
+    "innerContent": {
+      "desktop": {
+        "value": "url"
+      }
+    }
+  },
+  "videoUrl": {
+    "innerContent": {
+      "desktop": {
+        "value": "https://drive.google.com/file/d/1DuSYKkU3K_QrhnbkedkYpB-agocdVWIh/view?usp=sharing"
+      }
+    }
+  },
+  "youtubeUrl": {
+    "innerContent": {
+      "desktop": {
+        "value": "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+      }
+    }
+  },
+  "youtubeControls": {
+    "innerContent": {
+      "desktop": {
+        "value": "off"
+      }
+    }
+  },
+  "seamlessMode": {
+    "innerContent": {
+      "desktop": {
+        "value": "on"
+      }
+    }
+  },
+  "renderMode": {
+    "innerContent": {
+      "desktop": {
+        "value": "video_tag"
+      }
+    }
+  },
+  "videoCode": {
+    "innerContent": {
+      "desktop": {
+        "value": "<iframe src=\"https://drive.google.com/file/d/1DuSYKkU3K_QrhnbkedkYpB-agocdVWIh/preview\" width=\"100%\" height=\"100%\" frameborder=\"0\" allow=\"autoplay; fullscreen\" allowfullscreen></iframe>"
+      }
+    }
+  },
+  "dimensionType": {
+    "innerContent": {
+      "desktop": {
+        "value": "aspect_ratio"
+      }
+    }
+  },
+  "aspectRatio": {
+    "innerContent": {
+      "desktop": {
+        "value": "16/9"
+      }
+    }
+  },
+  "customAspectRatio": {
+    "innerContent": {
+      "desktop": {
+        "value": "16/9"
+      }
+    }
+  },
+  "customWidth": {
+    "innerContent": {
+      "desktop": {
+        "value": "100%"
+      }
+    }
+  },
+  "customHeight": {
+    "innerContent": {
+      "desktop": {
+        "value": "450px"
+      }
+    }
+  }
+}

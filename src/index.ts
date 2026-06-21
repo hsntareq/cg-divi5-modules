@@ -9,6 +9,7 @@ import { carousel } from './components/carousel';
 import { carouselItem } from './components/carousel-item';
 import { textMarquee } from './components/text-marquee';
 import { portfolioPB } from './components/portfolio-pb';
+import { cgDriveVideo } from './components/cg-drive-video';
 
 import './module-icons';
 
@@ -19,6 +20,7 @@ const registerModules = () => {
   registerModule(carouselItem.metadata, omit(carouselItem, 'metadata'));
   registerModule(textMarquee.metadata, omit(textMarquee, 'metadata'));
   registerModule(portfolioPB.metadata, omit(portfolioPB, 'metadata'));
+  registerModule(cgDriveVideo.metadata, omit(cgDriveVideo, 'metadata'));
 };
 
 addAction('divi.moduleLibrary.registerModuleLibraryStore.after', 'cgDivi5Modules', registerModules);

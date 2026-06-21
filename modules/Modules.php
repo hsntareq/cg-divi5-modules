@@ -17,6 +17,7 @@ use CG\Divi5Modules\Carousel\Carousel;
 use CG\Divi5Modules\CarouselItem\CarouselItem;
 use CG\Divi5Modules\TextMarquee\TextMarquee;
 use CG\Divi5Modules\PortfolioPB\PortfolioPB;
+use CG\Divi5Modules\CGDriveVideo\CGDriveVideo;
 
 add_action(
 	'divi_module_library_modules_dependency_tree',
@@ -26,5 +27,6 @@ add_action(
 		$dependency_tree->add_dependency( new CarouselItem() );
 		$dependency_tree->add_dependency( new TextMarquee() );
 		$dependency_tree->add_dependency( new PortfolioPB() );
+		$dependency_tree->add_dependency( new CGDriveVideo() );
 	}
 );
