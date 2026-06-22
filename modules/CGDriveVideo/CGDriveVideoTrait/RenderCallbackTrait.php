@@ -58,43 +58,36 @@ trait RenderCallbackTrait {
 		$player_html = '';
 
 		if ( $video_source_type === 'url' ) {
-			if ( empty( $file_id ) ) {
+			if ( ! empty( $file_id ) ) {
+				if ( $render_mode === 'video_tag' ) {
+					$stream_url  = add_query_arg( 'cg_drive_video_stream', $file_id, home_url( '/' ) );
+					$player_html = "<video class=\"cg_drive_video__element\" src=\"{$stream_url}\" autoplay=\"autoplay\" muted=\"muted\" playsinline=\"playsinline\"></video>";
+				} else {
+					$iframe_url  = "https://drive.google.com/file/d/{$file_id}/preview";
+					$player_html = HTMLUtility::render(
+						[
+							'tag'        => 'iframe',
+							'attributes' => [
+								'class'           => 'cg_drive_video__iframe',
+								'src'             => $iframe_url,
+								'frameborder'     => '0',
+								'allow'           => 'autoplay; fullscreen',
+								'allowfullscreen' => 'allowfullscreen',
+							],
+						]
+					);
+				}
+			} elseif ( ! empty( $video_url ) && ( strpos( $video_url, 'http://' ) === 0 || strpos( $video_url, 'https://' ) === 0 ) ) {
+				// Fallback to standard direct video URL support
+				$player_html = "<video class=\"cg_drive_video__element\" src=\"{$video_url}\" autoplay=\"autoplay\" muted=\"muted\" playsinline=\"playsinline\"></video>";
+			} else {
 				$player_html = HTMLUtility::render(
 					[
 						'tag'        => 'div',
 						'attributes' => [
 							'class' => 'cg_drive_video__placeholder',
 						],
-						'children'   => 'Please enter a valid Google Drive URL (e.g., https://drive.google.com/file/d/FILE_ID/view)',
-					]
-				);
-			} elseif ( $render_mode === 'video_tag' ) {
-				$stream_url  = "https://drive.google.com/uc?export=download&id={$file_id}";
-				$player_html = HTMLUtility::render(
-					[
-						'tag'        => 'video',
-						'attributes' => [
-							'class'       => 'cg_drive_video__element',
-							'src'         => $stream_url,
-							'autoplay'    => 'autoplay',
-							'loop'        => 'loop',
-							'muted'       => 'muted',
-							'playsinline' => 'playsinline',
-						],
-					]
-				);
-			} else {
-				$iframe_url  = "https://drive.google.com/file/d/{$file_id}/preview";
-				$player_html = HTMLUtility::render(
-					[
-						'tag'        => 'iframe',
-						'attributes' => [
-							'class'           => 'cg_drive_video__iframe',
-							'src'             => $iframe_url,
-							'frameborder'     => '0',
-							'allow'           => 'autoplay; fullscreen',
-							'allowfullscreen' => 'allowfullscreen',
-						],
+						'children'   => 'Please enter a valid Google Drive URL or direct video link.',
 					]
 				);
 			}
@@ -110,8 +103,8 @@ trait RenderCallbackTrait {
 					]
 				);
 			} else {
-				$show_controls = ( $youtube_controls === 'on' ) ? '1' : '0';
-				$iframe_url  = "https://www.youtube.com/embed/{$youtube_id}?autoplay=1&loop=1&playlist={$youtube_id}&mute=1&controls={$show_controls}&playsinline=1&modestbranding=1&rel=0&enablejsapi=1";
+				$show_controls  = ( $seamless_mode === 'on' ) ? '0' : ( ( $youtube_controls === 'on' ) ? '1' : '0' );
+				$iframe_url     = "https://www.youtube.com/embed/{$youtube_id}?autoplay=1&loop=1&playlist={$youtube_id}&mute=1&controls={$show_controls}&playsinline=1&modestbranding=1&rel=0&enablejsapi=1";
 				$player_html = HTMLUtility::render(
 					[
 						'tag'        => 'iframe',

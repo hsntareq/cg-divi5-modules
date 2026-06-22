@@ -1,4 +1,4 @@
-import React, { ReactElement } from 'react';
+import React, { ReactElement, useRef, useEffect } from 'react';
 import { ModuleContainer } from '@divi/module';
 import { CGDriveVideoEditProps } from './types';
 import { ModuleStyles } from './styles';
@@ -32,51 +32,94 @@ export const getYouTubeVideoId = (url: string): string | null => {
 interface CGDriveVideoPlayerProps {
   videoSourceType: string;
   fileId: string | null;
+  videoUrl: string;
   renderMode: string;
   youtubeId: string | null;
   youtubeControls: string;
   videoCode: string;
+  seamlessMode: string;
 }
 
 const CGDriveVideoPlayer = React.memo((props: CGDriveVideoPlayerProps): ReactElement | null => {
   const {
     videoSourceType,
     fileId,
+    videoUrl,
     renderMode,
     youtubeId,
     youtubeControls,
     videoCode,
+    seamlessMode,
   } = props;
 
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.muted = true;
+      videoRef.current.load();
+      videoRef.current.play().catch((err) => {
+        console.log('React VB Autoplay failed:', err);
+      });
+    }
+  }, [fileId, renderMode, videoSourceType, videoUrl]);
+
   if (videoSourceType === 'url') {
-    if (!fileId) {
-      return (
-        <div className="cg_drive_video__placeholder">
-          Please enter a valid Google Drive URL (e.g., https://drive.google.com/file/d/FILE_ID/view)
-        </div>
-      );
-    } else if (renderMode === 'video_tag') {
-      const streamUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
+    if (fileId) {
+      if (renderMode === 'video_tag') {
+        const streamUrl = `${window.location.origin}/?cg_drive_video_stream=${fileId}`;
+        return (
+          <video
+            ref={videoRef}
+            className="cg_drive_video__element"
+            src={streamUrl}
+            autoPlay
+            muted
+            playsInline
+            onEnded={(e) => {
+              const video = e.currentTarget;
+              video.muted = true;
+              video.src = streamUrl;
+              video.load();
+              video.play().catch((err) => console.log('VB Autoplay loop failed:', err));
+            }}
+          />
+        );
+      } else {
+        const iframeUrl = `https://drive.google.com/file/d/${fileId}/preview`;
+        return (
+          <iframe
+            className="cg_drive_video__iframe"
+            src={iframeUrl}
+            frameBorder="0"
+            allow="autoplay; fullscreen"
+            allowFullScreen
+          />
+        );
+      }
+    } else if (videoUrl && (videoUrl.startsWith('http://') || videoUrl.startsWith('https://'))) {
       return (
         <video
+          ref={videoRef}
           className="cg_drive_video__element"
-          src={streamUrl}
+          src={videoUrl}
           autoPlay
-          loop
           muted
           playsInline
+          onEnded={(e) => {
+            const video = e.currentTarget;
+            video.muted = true;
+            video.src = videoUrl;
+            video.load();
+            video.play().catch((err) => console.log('VB Autoplay loop failed:', err));
+          }}
         />
       );
     } else {
-      const iframeUrl = `https://drive.google.com/file/d/${fileId}/preview`;
       return (
-        <iframe
-          className="cg_drive_video__iframe"
-          src={iframeUrl}
-          frameBorder="0"
-          allow="autoplay; fullscreen"
-          allowFullScreen
-        />
+        <div className="cg_drive_video__placeholder">
+          Please enter a valid Google Drive URL or direct video URL.
+        </div>
       );
     }
   } else if (videoSourceType === 'youtube') {
@@ -87,7 +130,7 @@ const CGDriveVideoPlayer = React.memo((props: CGDriveVideoPlayerProps): ReactEle
         </div>
       );
     } else {
-      const showControls = youtubeControls === 'on' ? '1' : '0';
+      const showControls = seamlessMode === 'on' ? '0' : (youtubeControls === 'on' ? '1' : '0');
       const iframeUrl = `https://www.youtube.com/embed/${youtubeId}?autoplay=1&loop=1&playlist=${youtubeId}&mute=1&controls=${showControls}&playsinline=1&modestbranding=1&rel=0&enablejsapi=1`;
       return (
         <iframe
@@ -179,10 +222,12 @@ export const CGDriveVideoEdit = (props: CGDriveVideoEditProps): ReactElement => 
         <CGDriveVideoPlayer
           videoSourceType={videoSourceType}
           fileId={fileId}
+          videoUrl={videoUrl}
           renderMode={renderMode}
           youtubeId={youtubeId}
           youtubeControls={youtubeControls}
           videoCode={videoCode}
+          seamlessMode={seamlessMode}
         />
       </div>
     </ModuleContainer>

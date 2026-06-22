@@ -350,3 +350,95 @@ add_action( 'init', function() {
         exit;
     }
 } );
+
+add_action( 'init', function() {
+	if ( isset( $_GET['cg_drive_video_stream'] ) ) {
+		$file_id = sanitize_text_field( $_GET['cg_drive_video_stream'] );
+		if ( empty( $file_id ) || ! preg_match( '/^[a-zA-Z0-9_-]+$/', $file_id ) ) {
+			status_header( 400 );
+			echo 'Invalid File ID';
+			exit;
+		}
+
+		$url = "https://drive.google.com/uc?export=download&confirm=t&id=" . $file_id;
+
+		// Resolve Google Drive redirect to drive.usercontent.google.com
+		$ch = curl_init();
+		curl_setopt( $ch, CURLOPT_URL, $url );
+		curl_setopt( $ch, CURLOPT_NOBODY, true );
+		curl_setopt( $ch, CURLOPT_FOLLOWLOCATION, false );
+		curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true );
+		curl_setopt( $ch, CURLOPT_HEADER, true );
+		$headers_string = curl_exec( $ch );
+		curl_close( $ch );
+
+		$final_url = $url;
+		if ( preg_match( '/^Location:\s*(https?:\/\/[^\s]+)/mi', $headers_string, $matches ) ) {
+			$final_url = trim( $matches[1] );
+		}
+
+		// Stream content from the final URL
+		$ch2 = curl_init();
+		curl_setopt( $ch2, CURLOPT_URL, $final_url );
+		curl_setopt( $ch2, CURLOPT_RETURNTRANSFER, false ); // Output directly
+		curl_setopt( $ch2, CURLOPT_HEADER, false );
+
+		// Pass browser Range request headers to support HTTP 206 byte ranges
+		$headers = [];
+		if ( isset( $_SERVER['HTTP_RANGE'] ) ) {
+			$headers[] = 'Range: ' . $_SERVER['HTTP_RANGE'];
+		}
+		if ( ! empty( $headers ) ) {
+			curl_setopt( $ch2, CURLOPT_HTTPHEADER, $headers );
+		}
+
+		// Forward headers from Google to the browser
+		curl_setopt( $ch2, CURLOPT_HEADERFUNCTION, function( $curl, $header_line ) {
+			$len = strlen( $header_line );
+			$header = explode( ':', $header_line, 2 );
+			if ( count( $header ) < 2 ) {
+				if ( preg_match( '/^HTTP\/\d+\.\d+\s+(\d+)/i', $header_line, $matches ) ) {
+					$status_code = (int) $matches[1];
+					http_response_code( $status_code );
+					if ( $status_code === 206 ) {
+						header( "Status: 206 Partial Content", true, 206 );
+					} else {
+						header( "Status: $status_code", true, $status_code );
+					}
+				}
+				return $len;
+			}
+			$name = strtolower( trim( $header[0] ) );
+			$value = trim( $header[1] );
+			
+			$allowed_headers = [
+				'content-type',
+				'content-length',
+				'content-range',
+				'accept-ranges',
+				'cache-control',
+				'expires',
+				'pragma',
+			];
+			if ( in_array( $name, $allowed_headers ) ) {
+				header( "$header[0]: $value" );
+			}
+			return $len;
+		} );
+
+		// Disable caching blocks and add CORP/CORS overrides
+		header( 'Access-Control-Allow-Origin: *' );
+		header( 'Access-Control-Allow-Methods: GET, HEAD, OPTIONS' );
+		header( 'Access-Control-Allow-Headers: Range' );
+		header( 'Content-Disposition: inline' );
+
+		// Clear all PHP output buffers
+		while ( ob_get_level() ) {
+			ob_end_clean();
+		}
+
+		curl_exec( $ch2 );
+		curl_close( $ch2 );
+		exit;
+	}
+} );

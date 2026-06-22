@@ -1159,7 +1159,7 @@ window.addEventListener('message', (e) => {
   if (!data) return;
 
   // Find target iframe
-  const iframes = document.querySelectorAll('.cg_portfolio_pb__thumbnail-wrapper iframe') as NodeListOf<HTMLIFrameElement>;
+  const iframes = document.querySelectorAll('.cg_portfolio_pb__thumbnail-wrapper iframe, .cg_drive_video__iframe') as NodeListOf<HTMLIFrameElement>;
   let targetIframe: HTMLIFrameElement | null = null;
   for (const iframe of iframes) {
     if (iframe.contentWindow === e.source) {
@@ -1182,10 +1182,46 @@ window.addEventListener('message', (e) => {
   }
 });
 
+const initDriveVideo = () => {
+  const videos = document.querySelectorAll('.cg_drive_video__element') as NodeListOf<HTMLVideoElement>;
+  videos.forEach((video) => {
+    if (video.getAttribute('data-loop-initialized') === 'true') return;
+    video.setAttribute('data-loop-initialized', 'true');
+    
+    // Explicitly set muted to true to guarantee autoplay on all browsers
+    video.muted = true;
+    
+    // Attempt playback immediately, with a fallback on user interaction
+    const startPlayback = () => {
+      video.play().catch((err) => {
+        console.log('Autoplay deferred, listening for user interaction:', err);
+        const playOnInteraction = () => {
+          video.play().catch((e) => console.log('Interactive play fallback failed:', e));
+          document.removeEventListener('click', playOnInteraction);
+          document.removeEventListener('scroll', playOnInteraction);
+          document.removeEventListener('touchstart', playOnInteraction);
+        };
+        document.addEventListener('click', playOnInteraction);
+        document.addEventListener('scroll', playOnInteraction);
+        document.addEventListener('touchstart', playOnInteraction);
+      });
+    };
+    startPlayback();
+
+    video.addEventListener('ended', function () {
+      this.muted = true;
+      this.src = this.src;
+      this.load();
+      this.play().catch((e) => console.log('Google Drive video loop failed:', e));
+    });
+  });
+};
+
 const initAll = () => {
   initCarousel();
   initPortfolioPB();
   initLightbox();
+  initDriveVideo();
 };
 
 if (document.readyState === 'loading') {
