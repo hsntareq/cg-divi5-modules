@@ -71,7 +71,7 @@ const CGDriveVideoPlayer = React.memo((props: CGDriveVideoPlayerProps): ReactEle
   if (videoSourceType === 'url') {
     if (fileId) {
       if (renderMode === 'video_tag') {
-        const streamUrl = `${window.location.origin}/?cg_drive_video_stream=${fileId}`;
+        const streamUrl = `https://drive.usercontent.google.com/download?id=${fileId}&export=download&confirm=t`;
         return (
           <video
             ref={videoRef}
