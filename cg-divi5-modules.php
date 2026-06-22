@@ -360,22 +360,7 @@ add_action( 'init', function() {
 			exit;
 		}
 
-		$url = "https://drive.google.com/uc?export=download&confirm=t&id=" . $file_id;
-
-		// Resolve Google Drive redirect to drive.usercontent.google.com
-		$ch = curl_init();
-		curl_setopt( $ch, CURLOPT_URL, $url );
-		curl_setopt( $ch, CURLOPT_NOBODY, true );
-		curl_setopt( $ch, CURLOPT_FOLLOWLOCATION, false );
-		curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true );
-		curl_setopt( $ch, CURLOPT_HEADER, true );
-		$headers_string = curl_exec( $ch );
-		curl_close( $ch );
-
-		$final_url = $url;
-		if ( preg_match( '/^Location:\s*(https?:\/\/[^\s]+)/mi', $headers_string, $matches ) ) {
-			$final_url = trim( $matches[1] );
-		}
+		$final_url = "https://drive.usercontent.google.com/download?id=" . $file_id . "&export=download&confirm=t";
 
 		// Stream content from the final URL
 		$ch2 = curl_init();
@@ -397,7 +382,7 @@ add_action( 'init', function() {
 			$len = strlen( $header_line );
 			$header = explode( ':', $header_line, 2 );
 			if ( count( $header ) < 2 ) {
-				if ( preg_match( '/^HTTP\/\d+\.\d+\s+(\d+)/i', $header_line, $matches ) ) {
+				if ( preg_match( '/^HTTP\/\S+\s+(\d+)/i', $header_line, $matches ) ) {
 					$status_code = (int) $matches[1];
 					http_response_code( $status_code );
 					if ( $status_code === 206 ) {
