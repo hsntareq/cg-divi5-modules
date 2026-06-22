@@ -38,6 +38,8 @@ interface CGDriveVideoPlayerProps {
   youtubeControls: string;
   videoCode: string;
   seamlessMode: string;
+  videoMuted: string;
+  videoControls: string;
 }
 
 const CGDriveVideoPlayer = React.memo((props: CGDriveVideoPlayerProps): ReactElement | null => {
@@ -50,19 +52,21 @@ const CGDriveVideoPlayer = React.memo((props: CGDriveVideoPlayerProps): ReactEle
     youtubeControls,
     videoCode,
     seamlessMode,
+    videoMuted,
+    videoControls,
   } = props;
 
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
     if (videoRef.current) {
-      videoRef.current.muted = true;
+      videoRef.current.muted = (videoMuted === 'on');
       videoRef.current.load();
       videoRef.current.play().catch((err) => {
         console.log('React VB Autoplay failed:', err);
       });
     }
-  }, [fileId, renderMode, videoSourceType, videoUrl]);
+  }, [fileId, renderMode, videoSourceType, videoUrl, videoMuted]);
 
   if (videoSourceType === 'url') {
     if (fileId) {
@@ -74,11 +78,12 @@ const CGDriveVideoPlayer = React.memo((props: CGDriveVideoPlayerProps): ReactEle
             className="cg_drive_video__element"
             src={streamUrl}
             autoPlay
-            muted
+            muted={videoMuted === 'on'}
+            controls={videoControls === 'on'}
             playsInline
             onEnded={(e) => {
               const video = e.currentTarget;
-              video.muted = true;
+              video.muted = (videoMuted === 'on');
               video.src = streamUrl;
               video.load();
               video.play().catch((err) => console.log('VB Autoplay loop failed:', err));
@@ -104,11 +109,12 @@ const CGDriveVideoPlayer = React.memo((props: CGDriveVideoPlayerProps): ReactEle
           className="cg_drive_video__element"
           src={videoUrl}
           autoPlay
-          muted
+          muted={videoMuted === 'on'}
+          controls={videoControls === 'on'}
           playsInline
           onEnded={(e) => {
             const video = e.currentTarget;
-            video.muted = true;
+            video.muted = (videoMuted === 'on');
             video.src = videoUrl;
             video.load();
             video.play().catch((err) => console.log('VB Autoplay loop failed:', err));
@@ -174,6 +180,8 @@ export const CGDriveVideoEdit = (props: CGDriveVideoEditProps): ReactElement => 
   const youtubeControls = attrs.youtubeControls?.innerContent?.desktop?.value || 'off';
   const seamlessMode = attrs.seamlessMode?.innerContent?.desktop?.value || 'on';
   const renderMode = attrs.renderMode?.innerContent?.desktop?.value || 'video_tag';
+  const videoMuted = attrs.videoMuted?.innerContent?.desktop?.value || 'off';
+  const videoControls = attrs.videoControls?.innerContent?.desktop?.value || 'on';
   const videoCode = attrs.videoCode?.innerContent?.desktop?.value || '';
   const dimensionType = attrs.dimensionType?.innerContent?.desktop?.value || 'aspect_ratio';
   const aspectRatio = attrs.aspectRatio?.innerContent?.desktop?.value || '16/9';
@@ -228,6 +236,8 @@ export const CGDriveVideoEdit = (props: CGDriveVideoEditProps): ReactElement => 
           youtubeControls={youtubeControls}
           videoCode={videoCode}
           seamlessMode={seamlessMode}
+          videoMuted={videoMuted}
+          videoControls={videoControls}
         />
       </div>
     </ModuleContainer>

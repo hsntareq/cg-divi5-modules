@@ -1188,8 +1188,9 @@ const initDriveVideo = () => {
     if (video.getAttribute('data-loop-initialized') === 'true') return;
     video.setAttribute('data-loop-initialized', 'true');
     
-    // Explicitly set muted to true to guarantee autoplay on all browsers
-    video.muted = true;
+    // Explicitly set muted state based on the HTML muted attribute
+    const isMuted = video.hasAttribute('muted');
+    video.muted = isMuted;
     
     // Attempt playback immediately, with a fallback on user interaction
     const startPlayback = () => {
@@ -1209,7 +1210,7 @@ const initDriveVideo = () => {
     startPlayback();
 
     video.addEventListener('ended', function () {
-      this.muted = true;
+      this.muted = isMuted;
       this.src = this.src;
       this.load();
       this.play().catch((e) => console.log('Google Drive video loop failed:', e));

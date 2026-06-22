@@ -35,6 +35,8 @@ trait RenderCallbackTrait {
 		$youtube_controls    = self::get_attribute_value( $attrs, 'youtubeControls', 'off' );
 		$seamless_mode       = self::get_attribute_value( $attrs, 'seamlessMode', 'on' );
 		$render_mode         = self::get_attribute_value( $attrs, 'renderMode', 'video_tag' );
+		$video_muted         = self::get_attribute_value( $attrs, 'videoMuted', 'off' );
+		$video_controls      = self::get_attribute_value( $attrs, 'videoControls', 'on' );
 		$video_code          = self::get_attribute_value( $attrs, 'videoCode', '' );
 		$dimension_type      = self::get_attribute_value( $attrs, 'dimensionType', 'aspect_ratio' );
 		$aspect_ratio        = self::get_attribute_value( $attrs, 'aspectRatio', '16/9' );
@@ -61,7 +63,9 @@ trait RenderCallbackTrait {
 			if ( ! empty( $file_id ) ) {
 				if ( $render_mode === 'video_tag' ) {
 					$stream_url  = add_query_arg( 'cg_drive_video_stream', $file_id, home_url( '/' ) );
-					$player_html = "<video class=\"cg_drive_video__element\" src=\"{$stream_url}\" autoplay=\"autoplay\" muted=\"muted\" playsinline=\"playsinline\"></video>";
+					$muted_attr = ( $video_muted === 'on' ) ? ' muted="muted"' : '';
+					$controls_attr = ( $video_controls === 'on' ) ? ' controls="controls"' : '';
+					$player_html = "<video class=\"cg_drive_video__element\" src=\"{$stream_url}\" autoplay=\"autoplay\"{$muted_attr}{$controls_attr} playsinline=\"playsinline\"></video>";
 				} else {
 					$iframe_url  = "https://drive.google.com/file/d/{$file_id}/preview";
 					$player_html = HTMLUtility::render(
@@ -79,7 +83,9 @@ trait RenderCallbackTrait {
 				}
 			} elseif ( ! empty( $video_url ) && ( strpos( $video_url, 'http://' ) === 0 || strpos( $video_url, 'https://' ) === 0 ) ) {
 				// Fallback to standard direct video URL support
-				$player_html = "<video class=\"cg_drive_video__element\" src=\"{$video_url}\" autoplay=\"autoplay\" muted=\"muted\" playsinline=\"playsinline\"></video>";
+				$muted_attr = ( $video_muted === 'on' ) ? ' muted="muted"' : '';
+				$controls_attr = ( $video_controls === 'on' ) ? ' controls="controls"' : '';
+				$player_html = "<video class=\"cg_drive_video__element\" src=\"{$video_url}\" autoplay=\"autoplay\"{$muted_attr}{$controls_attr} playsinline=\"playsinline\"></video>";
 			} else {
 				$player_html = HTMLUtility::render(
 					[
