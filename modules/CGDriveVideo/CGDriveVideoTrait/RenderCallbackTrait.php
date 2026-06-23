@@ -62,7 +62,7 @@ trait RenderCallbackTrait {
 		if ( $video_source_type === 'url' ) {
 			if ( ! empty( $file_id ) ) {
 				if ( $render_mode === 'video_tag' ) {
-					$stream_url  = "https://drive.usercontent.google.com/download?id={$file_id}&export=download&confirm=t";
+					$stream_url  = add_query_arg( 'cg_drive_video_stream', $file_id, home_url( '/' ) );
 					$muted_attr = ( $video_muted === 'on' ) ? ' muted="muted"' : '';
 					$controls_attr = ( $video_controls === 'on' ) ? ' controls="controls"' : '';
 					$player_html = "<video class=\"cg_drive_video__element\" src=\"{$stream_url}\" autoplay=\"autoplay\"{$muted_attr}{$controls_attr} playsinline=\"playsinline\"></video>";
