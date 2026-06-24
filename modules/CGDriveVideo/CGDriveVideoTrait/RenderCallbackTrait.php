@@ -29,7 +29,7 @@ trait RenderCallbackTrait {
 	 * @return string HTML rendered of CGDriveVideo module.
 	 */
 	public static function render_callback( $attrs, $content, $block, $elements ) {
-		$video_source_type   = self::get_attribute_value( $attrs, 'videoSourceType', 'url' );
+		$video_source_type   = self::get_attribute_value( $attrs, 'videoSourceType', 'youtube' );
 		$video_url           = self::get_attribute_value( $attrs, 'videoUrl', '' );
 		$youtube_url         = self::get_attribute_value( $attrs, 'youtubeUrl', '' );
 		$youtube_controls    = self::get_attribute_value( $attrs, 'youtubeControls', 'off' );
@@ -111,8 +111,7 @@ trait RenderCallbackTrait {
 					]
 				);
 			} else {
-				$show_controls  = ( $seamless_mode === 'on' ) ? '0' : ( ( $youtube_controls === 'on' ) ? '1' : '0' );
-				$iframe_url     = "https://www.youtube.com/embed/{$youtube_id}?autoplay=1&loop=1&playlist={$youtube_id}&mute=1&controls={$show_controls}&playsinline=1&modestbranding=1&rel=0&enablejsapi=1";
+				$iframe_url     = "https://www.youtube.com/embed/{$youtube_id}?autoplay=1&loop=1&playlist={$youtube_id}&mute=0&controls=1&playsinline=1&modestbranding=1&rel=0&enablejsapi=1";
 				$player_html = HTMLUtility::render(
 					[
 						'tag'        => 'iframe',

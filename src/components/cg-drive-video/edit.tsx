@@ -141,8 +141,7 @@ const CGDriveVideoPlayer = React.memo((props: CGDriveVideoPlayerProps): ReactEle
         </div>
       );
     } else {
-      const showControls = seamlessMode === 'on' ? '0' : (youtubeControls === 'on' ? '1' : '0');
-      const iframeUrl = `https://www.youtube.com/embed/${youtubeId}?autoplay=1&loop=1&playlist=${youtubeId}&mute=1&controls=${showControls}&playsinline=1&modestbranding=1&rel=0&enablejsapi=1`;
+      const iframeUrl = `https://www.youtube.com/embed/${youtubeId}?autoplay=1&loop=1&playlist=${youtubeId}&mute=0&controls=1&playsinline=1&modestbranding=1&rel=0&enablejsapi=1`;
       return (
         <iframe
           className="cg_drive_video__iframe"
@@ -180,7 +179,7 @@ export const CGDriveVideoEdit = (props: CGDriveVideoEditProps): ReactElement => 
     name,
   } = props;
 
-  const videoSourceType = attrs.videoSourceType?.innerContent?.desktop?.value || 'url';
+  const videoSourceType = attrs.videoSourceType?.innerContent?.desktop?.value || 'youtube';
   const videoUrl = attrs.videoUrl?.innerContent?.desktop?.value || '';
   const youtubeUrl = attrs.youtubeUrl?.innerContent?.desktop?.value || '';
   const youtubeControls = attrs.youtubeControls?.innerContent?.desktop?.value || 'off';

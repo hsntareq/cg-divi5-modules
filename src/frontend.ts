@@ -429,43 +429,50 @@ const playCardVideo = (card: HTMLElement) => {
         try {
           const u = new URL(mutedUrl);
           u.searchParams.set('autoplay', autoplayVal);
-          u.searchParams.set('mute', '1');
-          u.searchParams.set('muted', '1');
-          if (videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be')) {
+          const isYouTube = videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be');
+          if (isYouTube) {
+            u.searchParams.set('mute', '0');
+            u.searchParams.set('muted', '0');
+            u.searchParams.set('controls', '1');
             u.searchParams.set('enablejsapi', '1');
             u.searchParams.set('loop', '1');
             const ytIdMatch = videoUrl.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
             if (ytIdMatch && ytIdMatch[1]) {
               u.searchParams.set('playlist', ytIdMatch[1]);
             }
-          }
-          if (videoUrl.includes('vimeo.com')) {
-            u.searchParams.set('loop', '1');
-          }
-          if (videoUrl.includes('drive.google.com')) {
-            const fileId = getGoogleDriveFileId(videoUrl);
-            if (fileId) {
+          } else {
+            u.searchParams.set('mute', '1');
+            u.searchParams.set('muted', '1');
+            if (videoUrl.includes('vimeo.com')) {
               u.searchParams.set('loop', '1');
-              u.searchParams.set('playlist', fileId);
+            }
+            if (videoUrl.includes('drive.google.com')) {
+              const fileId = getGoogleDriveFileId(videoUrl);
+              if (fileId) {
+                u.searchParams.set('loop', '1');
+                u.searchParams.set('playlist', fileId);
+              }
             }
           }
           mutedUrl = u.toString();
         } catch (e) {
-          let extra = `autoplay=${autoplayVal}&mute=1&muted=1`;
-          if (videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be')) {
+          const isYouTube = videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be');
+          let extra = isYouTube ? `autoplay=${autoplayVal}&mute=0&muted=0&controls=1` : `autoplay=${autoplayVal}&mute=1&muted=1`;
+          if (isYouTube) {
             extra += '&enablejsapi=1&loop=1';
             const ytIdMatch = videoUrl.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
             if (ytIdMatch && ytIdMatch[1]) {
               extra += `&playlist=${ytIdMatch[1]}`;
             }
-          }
-          if (videoUrl.includes('vimeo.com')) {
-            extra += '&loop=1';
-          }
-          if (videoUrl.includes('drive.google.com')) {
-            const fileId = getGoogleDriveFileId(videoUrl);
-            if (fileId) {
-              extra += `&loop=1&playlist=${fileId}`;
+          } else {
+            if (videoUrl.includes('vimeo.com')) {
+              extra += '&loop=1';
+            }
+            if (videoUrl.includes('drive.google.com')) {
+              const fileId = getGoogleDriveFileId(videoUrl);
+              if (fileId) {
+                extra += `&loop=1&playlist=${fileId}`;
+              }
             }
           }
           mutedUrl = mutedUrl + (mutedUrl.indexOf('?') >= 0 ? '&' : '?') + extra;
