@@ -360,70 +360,206 @@ add_action( 'init', function() {
 			exit;
 		}
 
+		$cache_dir = WP_CONTENT_DIR . '/uploads/cg-drive-video-cache';
+		if ( ! file_exists( $cache_dir ) ) {
+			wp_mkdir_p( $cache_dir );
+		}
+
+		$cache_file = $cache_dir . '/' . $file_id . '.mp4';
+		$lock_file  = $cache_file . '.lock';
+		$tmp_file   = $cache_file . '.tmp';
+
+		if ( file_exists( $cache_file ) ) {
+			cg_serve_local_file_range( $cache_file );
+		}
+
 		$final_url = "https://drive.usercontent.google.com/download?id=" . $file_id . "&export=download&confirm=t";
 
-		// Stream content from the final URL
-		$ch2 = curl_init();
-		curl_setopt( $ch2, CURLOPT_URL, $final_url );
-		curl_setopt( $ch2, CURLOPT_RETURNTRANSFER, false ); // Output directly
-		curl_setopt( $ch2, CURLOPT_HEADER, false );
-
-		// Pass browser Range request headers to support HTTP 206 byte ranges
-		$headers = [];
-		if ( isset( $_SERVER['HTTP_RANGE'] ) ) {
-			$headers[] = 'Range: ' . $_SERVER['HTTP_RANGE'];
-		}
-		if ( ! empty( $headers ) ) {
-			curl_setopt( $ch2, CURLOPT_HTTPHEADER, $headers );
+		// If currently downloading (lock file exists), fallback to streaming directly from Google Drive
+		if ( file_exists( $lock_file ) ) {
+			cg_stream_live_from_google( $final_url );
 		}
 
-		// Forward headers from Google to the browser
-		curl_setopt( $ch2, CURLOPT_HEADERFUNCTION, function( $curl, $header_line ) {
-			$len = strlen( $header_line );
-			$header = explode( ':', $header_line, 2 );
-			if ( count( $header ) < 2 ) {
-				if ( preg_match( '/^HTTP\/\S+\s+(\d+)/i', $header_line, $matches ) ) {
-					$status_code = (int) $matches[1];
-					http_response_code( $status_code );
-					if ( $status_code === 206 ) {
-						header( "Status: 206 Partial Content", true, 206 );
-					} else {
-						header( "Status: $status_code", true, $status_code );
-					}
+		// Download to local cache
+		touch( $lock_file );
+		
+		$fp = fopen( $tmp_file, 'wb' );
+		if ( $fp ) {
+			$ch = curl_init();
+			curl_setopt( $ch, CURLOPT_URL, $final_url );
+			curl_setopt( $ch, CURLOPT_FILE, $fp );
+			curl_setopt( $ch, CURLOPT_FOLLOWLOCATION, true );
+			curl_setopt( $ch, CURLOPT_TIMEOUT, 300 ); // 5 minutes timeout
+			curl_exec( $ch );
+			$http_code = curl_getinfo( $ch, CURLINFO_HTTP_CODE );
+			curl_close( $ch );
+			fclose( $fp );
+
+			if ( $http_code === 200 && filesize( $tmp_file ) > 0 ) {
+				rename( $tmp_file, $cache_file );
+				if ( file_exists( $lock_file ) ) {
+					unlink( $lock_file );
 				}
-				return $len;
+				cg_serve_local_file_range( $cache_file );
 			}
-			$name = strtolower( trim( $header[0] ) );
-			$value = trim( $header[1] );
-			
-			$allowed_headers = [
-				'content-type',
-				'content-length',
-				'content-range',
-				'accept-ranges',
-				'cache-control',
-				'expires',
-				'pragma',
-			];
-			if ( in_array( $name, $allowed_headers ) ) {
-				header( "$header[0]: $value" );
-			}
-			return $len;
-		} );
-
-		// Disable caching blocks and add CORP/CORS overrides
-		header( 'Access-Control-Allow-Origin: *' );
-		header( 'Access-Control-Allow-Methods: GET, HEAD, OPTIONS' );
-		header( 'Access-Control-Allow-Headers: Range' );
-		header( 'Content-Disposition: inline' );
-
-		// Clear all PHP output buffers
-		while ( ob_get_level() ) {
-			ob_end_clean();
 		}
 
-		curl_exec( $ch2 );
-		curl_close( $ch2 );
-		exit;
+		// If download failed/aborted, clean up and stream live
+		if ( file_exists( $tmp_file ) ) {
+			unlink( $tmp_file );
+		}
+		if ( file_exists( $lock_file ) ) {
+			unlink( $lock_file );
+		}
+
+		cg_stream_live_from_google( $final_url );
 	}
 } );
+
+function cg_stream_live_from_google( $final_url ) {
+	// Stream content from the final URL
+	$ch2 = curl_init();
+	curl_setopt( $ch2, CURLOPT_URL, $final_url );
+	curl_setopt( $ch2, CURLOPT_RETURNTRANSFER, false ); // Output directly
+	curl_setopt( $ch2, CURLOPT_HEADER, false );
+
+	// Pass browser Range request headers to support HTTP 206 byte ranges
+	$headers = [];
+	if ( isset( $_SERVER['HTTP_RANGE'] ) ) {
+		$headers[] = 'Range: ' . $_SERVER['HTTP_RANGE'];
+	}
+	if ( ! empty( $headers ) ) {
+		curl_setopt( $ch2, CURLOPT_HTTPHEADER, $headers );
+	}
+
+	// Forward headers from Google to the browser
+	curl_setopt( $ch2, CURLOPT_HEADERFUNCTION, function( $curl, $header_line ) {
+		$len = strlen( $header_line );
+		$header = explode( ':', $header_line, 2 );
+		if ( count( $header ) < 2 ) {
+			if ( preg_match( '/^HTTP\/\S+\s+(\d+)/i', $header_line, $matches ) ) {
+				$status_code = (int) $matches[1];
+				http_response_code( $status_code );
+				if ( $status_code === 206 ) {
+					header( "Status: 206 Partial Content", true, 206 );
+				} else {
+					header( "Status: $status_code", true, $status_code );
+				}
+			}
+			return $len;
+		}
+		$name = strtolower( trim( $header[0] ) );
+		$value = trim( $header[1] );
+		
+		$allowed_headers = [
+			'content-type',
+			'content-length',
+			'content-range',
+			'accept-ranges',
+			'cache-control',
+			'expires',
+			'pragma',
+		];
+		if ( in_array( $name, $allowed_headers ) ) {
+			header( "$header[0]: $value" );
+		}
+		return $len;
+	} );
+
+	// Disable caching blocks and add CORP/CORS overrides
+	header( 'Access-Control-Allow-Origin: *' );
+	header( 'Access-Control-Allow-Methods: GET, HEAD, OPTIONS' );
+	header( 'Access-Control-Allow-Headers: Range' );
+	header( 'Content-Disposition: inline' );
+
+	// Clear all PHP output buffers
+	while ( ob_get_level() ) {
+		ob_end_clean();
+	}
+
+	curl_exec( $ch2 );
+	curl_close( $ch2 );
+	exit;
+}
+
+function cg_serve_local_file_range( $filepath ) {
+	if ( ! file_exists( $filepath ) ) {
+		status_header( 404 );
+		echo 'File not found';
+		exit;
+	}
+
+	$filesize = filesize( $filepath );
+	$file = fopen( $filepath, 'rb' );
+	if ( ! $file ) {
+		status_header( 500 );
+		echo 'Cannot open file';
+		exit;
+	}
+
+	$start = 0;
+	$end = $filesize - 1;
+
+	// Clear all PHP output buffers
+	while ( ob_get_level() ) {
+		ob_end_clean();
+	}
+
+	// Disable caching blocks and add CORP/CORS overrides
+	header( 'Access-Control-Allow-Origin: *' );
+	header( 'Access-Control-Allow-Methods: GET, HEAD, OPTIONS' );
+	header( 'Access-Control-Allow-Headers: Range' );
+	header( 'Content-Disposition: inline' );
+	header( 'Accept-Ranges: bytes' );
+	header( 'Content-Type: video/mp4' ); // Serve as video/mp4 since it is a video stream
+
+	if ( isset( $_SERVER['HTTP_RANGE'] ) ) {
+		$c_start = $start;
+		$c_end = $end;
+
+		list( , $range ) = explode( '=', $_SERVER['HTTP_RANGE'], 2 );
+		if ( strpos( $range, ',' ) !== false ) {
+			header( 'HTTP/1.1 416 Requested Range Not Satisfiable' );
+			header( "Content-Range: bytes $start-$end/$filesize" );
+			exit;
+		}
+		
+		if ( $range == '-' ) {
+			$c_start = $filesize - substr( $range, 1 );
+		} else {
+			$range = explode( '-', $range );
+			$c_start = $range[0];
+			
+			$c_end = ( isset( $range[1] ) && is_numeric( $range[1] ) ) ? $range[1] : $filesize - 1;
+		}
+		$c_end = ( $c_end > $end ) ? $end : $c_end;
+		
+		if ( $c_start > $c_end || $c_start > $filesize - 1 || $c_end >= $filesize ) {
+			header( 'HTTP/1.1 416 Requested Range Not Satisfiable' );
+			header( "Content-Range: bytes $start-$end/$filesize" );
+			exit;
+		}
+		$start = (int) $c_start;
+		$end = (int) $c_end;
+		$length = $end - $start + 1;
+		
+		fseek( $file, $start );
+		header( 'HTTP/1.1 206 Partial Content' );
+		header( "Status: 206 Partial Content", true, 206 );
+		header( "Content-Range: bytes $start-$end/$filesize" );
+		header( "Content-Length: " . $length );
+	} else {
+		header( "Content-Length: " . $filesize );
+	}
+
+	$buffer = 1024 * 64; // 64kb chunks
+	while ( ! feof( $file ) && ( $p = ftell( $file ) ) <= $end ) {
+		if ( $p + $buffer > $end ) {
+			$buffer = $end - $p + 1;
+		}
+		echo fread( $file, (int) $buffer );
+		flush();
+	}
+	fclose( $file );
+	exit;
+}
