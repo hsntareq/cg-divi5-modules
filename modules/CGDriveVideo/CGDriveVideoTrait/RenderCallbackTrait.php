@@ -33,7 +33,7 @@ trait RenderCallbackTrait {
 		$video_url           = self::get_attribute_value( $attrs, 'videoUrl', '' );
 		$youtube_url         = self::get_attribute_value( $attrs, 'youtubeUrl', '' );
 		$youtube_controls    = self::get_attribute_value( $attrs, 'youtubeControls', 'off' );
-		$seamless_mode       = self::get_attribute_value( $attrs, 'seamlessMode', 'on' );
+		$seamless_mode       = self::get_attribute_value( $attrs, 'seamlessMode', 'off' );
 		$render_mode         = self::get_attribute_value( $attrs, 'renderMode', 'video_tag' );
 		$video_muted         = self::get_attribute_value( $attrs, 'videoMuted', 'off' );
 		$video_controls      = self::get_attribute_value( $attrs, 'videoControls', 'on' );
@@ -152,7 +152,7 @@ trait RenderCallbackTrait {
 		}
 
 		$container_class = 'cg_drive_video__container';
-		if ( $seamless_mode === 'on' ) {
+		if ( $seamless_mode === 'on' && $video_source_type !== 'youtube' ) {
 			$container_class .= ' cg_drive_video__container--seamless';
 		}
 

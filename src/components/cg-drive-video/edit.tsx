@@ -183,7 +183,7 @@ export const CGDriveVideoEdit = (props: CGDriveVideoEditProps): ReactElement => 
   const videoUrl = attrs.videoUrl?.innerContent?.desktop?.value || '';
   const youtubeUrl = attrs.youtubeUrl?.innerContent?.desktop?.value || '';
   const youtubeControls = attrs.youtubeControls?.innerContent?.desktop?.value || 'off';
-  const seamlessMode = attrs.seamlessMode?.innerContent?.desktop?.value || 'on';
+  const seamlessMode = attrs.seamlessMode?.innerContent?.desktop?.value || 'off';
   const renderMode = attrs.renderMode?.innerContent?.desktop?.value || 'video_tag';
   const videoMuted = attrs.videoMuted?.innerContent?.desktop?.value || 'off';
   const videoControls = attrs.videoControls?.innerContent?.desktop?.value || 'on';
@@ -214,7 +214,7 @@ export const CGDriveVideoEdit = (props: CGDriveVideoEditProps): ReactElement => 
   // Determine container classes
   const containerClasses = [
     'cg_drive_video__container',
-    seamlessMode === 'on' ? 'cg_drive_video__container--seamless' : '',
+    (seamlessMode === 'on' && videoSourceType !== 'youtube') ? 'cg_drive_video__container--seamless' : '',
   ].filter(Boolean).join(' ');
 
   return (
