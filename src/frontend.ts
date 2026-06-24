@@ -216,6 +216,7 @@ const initCarousel = () => {
       currentIndex = targetIndex;
       updateActiveDot();
       updateSlidePosition(true);
+      updateCarouselVideos(carousel);
     }
 
     // Wrap resets at transition ends for infinite loops
@@ -229,6 +230,7 @@ const initCarousel = () => {
         currentIndex = slidesToShow;
         updateSlidePosition(false);
       }
+      updateCarouselVideos(carousel);
     });
 
     // Autoplay timer
@@ -252,6 +254,13 @@ const initCarousel = () => {
     // Mouse pause actions
     inner.addEventListener('mouseenter', stopAutoplay);
     inner.addEventListener('mouseleave', startAutoplay);
+
+    // Update carousel videos on scroll, resize, and initially
+    window.addEventListener('scroll', () => updateCarouselVideos(carousel), { passive: true });
+    window.addEventListener('resize', () => updateCarouselVideos(carousel), { passive: true });
+    setTimeout(() => {
+      updateCarouselVideos(carousel);
+    }, 200);
   });
 };
 
@@ -368,6 +377,209 @@ const getGoogleDriveVideoDuration = (fileId: string): number => {
 
 
 
+const playCardVideo = (card: HTMLElement) => {
+  if (!card.classList.contains('cg_portfolio_pb__card--video')) return;
+
+  const thumbWrapper = card.querySelector('.cg_portfolio_pb__thumbnail-wrapper') as HTMLElement;
+  if (!thumbWrapper) return;
+
+  card.classList.add('cg_portfolio_pb__card--playing');
+
+  const videoUrl = card.getAttribute('href');
+  if (videoUrl && videoUrl !== '#') {
+    const oldTimer = card.getAttribute('data-loop-timer-id');
+    if (oldTimer) {
+      clearInterval(parseInt(oldTimer, 10));
+      card.removeAttribute('data-loop-timer-id');
+    }
+    if (isDirectVideo(videoUrl)) {
+      let video = thumbWrapper.querySelector('video');
+      if (!video) {
+        const streamUrl = getVideoStreamUrl(videoUrl);
+        video = document.createElement('video');
+        video.src = streamUrl;
+        video.autoplay = true;
+        video.muted = true;
+        video.loop = true;
+        video.setAttribute('playsinline', 'true');
+        video.setAttribute('muted', 'true');
+        video.style.width = '100%';
+        video.style.height = '100%';
+        video.style.objectFit = 'cover';
+        video.style.position = 'absolute';
+        video.style.top = '0';
+        video.style.left = '0';
+        video.style.zIndex = '1';
+
+        thumbWrapper.appendChild(video);
+      }
+      if (video.paused) {
+        video.play().catch((err) => {
+          console.log('Video play failed:', err);
+        });
+      }
+    } else {
+      let iframe = thumbWrapper.querySelector('iframe');
+      if (!iframe) {
+        let mutedUrl = videoUrl;
+        if (videoUrl.includes('drive.google.com')) {
+          mutedUrl = getGoogleDrivePreviewUrl(videoUrl);
+        }
+        const autoplayVal = '1';
+        try {
+          const u = new URL(mutedUrl);
+          u.searchParams.set('autoplay', autoplayVal);
+          u.searchParams.set('mute', '1');
+          u.searchParams.set('muted', '1');
+          if (videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be')) {
+            u.searchParams.set('enablejsapi', '1');
+            u.searchParams.set('loop', '1');
+            const ytIdMatch = videoUrl.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
+            if (ytIdMatch && ytIdMatch[1]) {
+              u.searchParams.set('playlist', ytIdMatch[1]);
+            }
+          }
+          if (videoUrl.includes('vimeo.com')) {
+            u.searchParams.set('loop', '1');
+          }
+          if (videoUrl.includes('drive.google.com')) {
+            const fileId = getGoogleDriveFileId(videoUrl);
+            if (fileId) {
+              u.searchParams.set('loop', '1');
+              u.searchParams.set('playlist', fileId);
+            }
+          }
+          mutedUrl = u.toString();
+        } catch (e) {
+          let extra = `autoplay=${autoplayVal}&mute=1&muted=1`;
+          if (videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be')) {
+            extra += '&enablejsapi=1&loop=1';
+            const ytIdMatch = videoUrl.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
+            if (ytIdMatch && ytIdMatch[1]) {
+              extra += `&playlist=${ytIdMatch[1]}`;
+            }
+          }
+          if (videoUrl.includes('vimeo.com')) {
+            extra += '&loop=1';
+          }
+          if (videoUrl.includes('drive.google.com')) {
+            const fileId = getGoogleDriveFileId(videoUrl);
+            if (fileId) {
+              extra += `&loop=1&playlist=${fileId}`;
+            }
+          }
+          mutedUrl = mutedUrl + (mutedUrl.indexOf('?') >= 0 ? '&' : '?') + extra;
+        }
+        iframe = document.createElement('iframe');
+        iframe.setAttribute('src', mutedUrl);
+        iframe.setAttribute('width', '100%');
+        iframe.setAttribute('height', '100%');
+        iframe.setAttribute('frameborder', '0');
+        iframe.setAttribute('allow', 'autoplay; fullscreen');
+        iframe.setAttribute('allowfullscreen', 'true');
+        if (videoUrl.includes('drive.google.com')) {
+          iframe.classList.add('cg_portfolio_pb__iframe--gdrive');
+        }
+        iframe.style.position = 'absolute';
+        iframe.style.top = '0';
+        iframe.style.left = '0';
+        iframe.style.width = '100%';
+        iframe.style.height = '100%';
+        iframe.style.border = 'none';
+        iframe.style.zIndex = '1';
+
+        thumbWrapper.appendChild(iframe);
+
+        if (videoUrl.includes('drive.google.com')) {
+          const fileId = getGoogleDriveFileId(videoUrl);
+          const durationMs = getGoogleDriveVideoDuration(fileId);
+          const timerId = setInterval(() => {
+            const activeIframe = thumbWrapper.querySelector('iframe');
+            if (activeIframe) {
+              const currentSrc = activeIframe.getAttribute('src') || '';
+              activeIframe.setAttribute('src', '');
+              setTimeout(() => {
+                activeIframe.setAttribute('src', currentSrc);
+              }, 50);
+            }
+          }, durationMs);
+          card.setAttribute('data-loop-timer-id', timerId.toString());
+        }
+      } else {
+        playIframe(iframe);
+      }
+    }
+  }
+};
+
+const pauseCardVideo = (card: HTMLElement) => {
+  if (!card.classList.contains('cg_portfolio_pb__card--video')) return;
+
+  const thumbWrapper = card.querySelector('.cg_portfolio_pb__thumbnail-wrapper') as HTMLElement;
+  if (!thumbWrapper) return;
+
+  card.classList.remove('cg_portfolio_pb__card--playing');
+  const oldTimer = card.getAttribute('data-loop-timer-id');
+  if (oldTimer) {
+    clearInterval(parseInt(oldTimer, 10));
+    card.removeAttribute('data-loop-timer-id');
+  }
+  const video = thumbWrapper.querySelector('video');
+  if (video) {
+    video.pause();
+    video.remove();
+  }
+  const iframe = thumbWrapper.querySelector('iframe');
+  if (iframe) {
+    iframe.remove();
+  }
+};
+
+const updateCarouselVideos = (carousel: HTMLElement) => {
+  const inner = carousel.querySelector('.cg_carousel__inner');
+  if (!inner) return;
+  const innerRect = inner.getBoundingClientRect();
+
+  // Find all standard videos inside this carousel
+  const videos = carousel.querySelectorAll('.cg_drive_video__element') as NodeListOf<HTMLVideoElement>;
+  videos.forEach((video) => {
+    const videoRect = video.getBoundingClientRect();
+    // Check if the video is visible inside the carousel inner container
+    const isVisible = !(videoRect.right <= innerRect.left || videoRect.left >= innerRect.right);
+    if (isVisible) {
+      // If it is visible inside the carousel, and also the carousel itself is in the browser viewport
+      const carouselRect = carousel.getBoundingClientRect();
+      const inViewport = (carouselRect.top < window.innerHeight && carouselRect.bottom > 0);
+      if (inViewport) {
+        video.muted = true;
+        video.play().catch((e) => console.log('Carousel video autoplay failed:', e));
+      } else {
+        video.pause();
+      }
+    } else {
+      video.pause();
+    }
+  });
+
+  // Find all portfolio video cards inside this carousel
+  const cards = carousel.querySelectorAll('.cg_portfolio_pb__card--video') as NodeListOf<HTMLElement>;
+  cards.forEach((card) => {
+    const cardRect = card.getBoundingClientRect();
+    const isVisible = !(cardRect.right <= innerRect.left || cardRect.left >= innerRect.right);
+    if (isVisible) {
+      const carouselRect = carousel.getBoundingClientRect();
+      const inViewport = (carouselRect.top < window.innerHeight && carouselRect.bottom > 0);
+      if (inViewport) {
+        playCardVideo(card);
+      } else {
+        pauseCardVideo(card);
+      }
+    } else {
+      pauseCardVideo(card);
+    }
+  });
+};
+
 const initPortfolioPB = () => {
   const wrappers = document.querySelectorAll('.cg_portfolio_pb__wrapper');
 
@@ -391,184 +603,38 @@ const initPortfolioPB = () => {
 
     // Helper to control single playing video card
     const playSingleVideo = (targetCard: HTMLElement | null) => {
+      if (targetCard) {
+        playCardVideo(targetCard);
+      } else {
+        cards.forEach((cardNode) => {
+          const card = cardNode as HTMLElement;
+          if (card.classList.contains('cg_portfolio_pb__card--video')) {
+            pauseCardVideo(card);
+          }
+        });
+      }
+    };
+
+    const updateViewportPlayback = () => {
+      // Loop over observed cards and trigger play/pause based on viewport intersection
       cards.forEach((cardNode) => {
         const card = cardNode as HTMLElement;
         if (!card.classList.contains('cg_portfolio_pb__card--video')) return;
 
-        const thumbWrapper = card.querySelector('.cg_portfolio_pb__thumbnail-wrapper') as HTMLElement;
-        if (!thumbWrapper) return;
+        // Skip if inside a carousel, as carousels have their own slide-based visibility manager
+        if (card.closest('.cg_carousel')) return;
 
-        const isTarget = (card === targetCard);
-        
-        if (isTarget) {
-          card.classList.add('cg_portfolio_pb__card--playing');
+        const playOffscreen = card.getAttribute('data-play-offscreen') === 'on';
 
-          // Pause all other wrappers
-          const wrappers = document.querySelectorAll('.cg_portfolio_pb__wrapper');
-          wrappers.forEach((w) => {
-            if (w !== wrapper) {
-              w.dispatchEvent(new CustomEvent('cg-pause-playback'));
-            }
-          });
-
-          // Pause all standard <video> tags not inside the target card
-          const allVideos = document.querySelectorAll('video');
-          allVideos.forEach((video) => {
-            if (!thumbWrapper.contains(video) && !video.paused) {
-              video.pause();
-            }
-          });
-
-          const videoUrl = card.getAttribute('href');
-          if (videoUrl && videoUrl !== '#') {
-            const oldTimer = card.getAttribute('data-loop-timer-id');
-            if (oldTimer) {
-              clearInterval(parseInt(oldTimer, 10));
-              card.removeAttribute('data-loop-timer-id');
-            }
-            if (isDirectVideo(videoUrl)) {
-              let video = thumbWrapper.querySelector('video');
-              if (!video) {
-                const streamUrl = getVideoStreamUrl(videoUrl);
-                video = document.createElement('video');
-                video.src = streamUrl;
-                video.autoplay = true;
-                video.muted = true;
-                video.loop = true;
-                video.setAttribute('playsinline', 'true');
-                video.setAttribute('muted', 'true');
-                video.style.width = '100%';
-                video.style.height = '100%';
-                video.style.objectFit = 'cover';
-                video.style.position = 'absolute';
-                video.style.top = '0';
-                video.style.left = '0';
-                video.style.zIndex = '1';
-
-                thumbWrapper.appendChild(video);
-              }
-              if (video.paused) {
-                video.play().catch((err) => {
-                  console.log('Video play failed on hover:', err);
-                });
-              }
-            } else {
-              let iframe = thumbWrapper.querySelector('iframe');
-              if (!iframe) {
-                let mutedUrl = videoUrl;
-                if (videoUrl.includes('drive.google.com')) {
-                  mutedUrl = getGoogleDrivePreviewUrl(videoUrl);
-                }
-                const autoplayVal = '1';
-                try {
-                  const u = new URL(mutedUrl);
-                  u.searchParams.set('autoplay', autoplayVal);
-                  u.searchParams.set('mute', '1');
-                  u.searchParams.set('muted', '1');
-                  if (videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be')) {
-                    u.searchParams.set('enablejsapi', '1');
-                    u.searchParams.set('loop', '1');
-                    const ytIdMatch = videoUrl.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
-                    if (ytIdMatch && ytIdMatch[1]) {
-                      u.searchParams.set('playlist', ytIdMatch[1]);
-                    }
-                  }
-                  if (videoUrl.includes('vimeo.com')) {
-                    u.searchParams.set('loop', '1');
-                  }
-                  if (videoUrl.includes('drive.google.com')) {
-                    const fileId = getGoogleDriveFileId(videoUrl);
-                    if (fileId) {
-                      u.searchParams.set('loop', '1');
-                      u.searchParams.set('playlist', fileId);
-                    }
-                  }
-                  mutedUrl = u.toString();
-                } catch (e) {
-                  let extra = `autoplay=${autoplayVal}&mute=1&muted=1`;
-                  if (videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be')) {
-                    extra += '&enablejsapi=1&loop=1';
-                    const ytIdMatch = videoUrl.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
-                    if (ytIdMatch && ytIdMatch[1]) {
-                      extra += `&playlist=${ytIdMatch[1]}`;
-                    }
-                  }
-                  if (videoUrl.includes('vimeo.com')) {
-                    extra += '&loop=1';
-                  }
-                  if (videoUrl.includes('drive.google.com')) {
-                    const fileId = getGoogleDriveFileId(videoUrl);
-                    if (fileId) {
-                      extra += `&loop=1&playlist=${fileId}`;
-                    }
-                  }
-                  mutedUrl = mutedUrl + (mutedUrl.indexOf('?') >= 0 ? '&' : '?') + extra;
-                }
-                iframe = document.createElement('iframe');
-                iframe.setAttribute('src', mutedUrl);
-                iframe.setAttribute('width', '100%');
-                iframe.setAttribute('height', '100%');
-                iframe.setAttribute('frameborder', '0');
-                iframe.setAttribute('allow', 'autoplay; fullscreen');
-                iframe.setAttribute('allowfullscreen', 'true');
-                if (videoUrl.includes('drive.google.com')) {
-                  iframe.classList.add('cg_portfolio_pb__iframe--gdrive');
-                }
-                iframe.style.position = 'absolute';
-                iframe.style.top = '0';
-                iframe.style.left = '0';
-                iframe.style.width = '100%';
-                iframe.style.height = '100%';
-                iframe.style.border = 'none';
-                iframe.style.zIndex = '1';
-
-                thumbWrapper.appendChild(iframe);
-
-                if (videoUrl.includes('drive.google.com')) {
-                  const fileId = getGoogleDriveFileId(videoUrl);
-                  const durationMs = getGoogleDriveVideoDuration(fileId);
-                  const timerId = setInterval(() => {
-                    const activeIframe = thumbWrapper.querySelector('iframe');
-                    if (activeIframe) {
-                      const currentSrc = activeIframe.getAttribute('src') || '';
-                      activeIframe.setAttribute('src', '');
-                      setTimeout(() => {
-                        activeIframe.setAttribute('src', currentSrc);
-                      }, 50);
-                    }
-                  }, durationMs);
-                  card.setAttribute('data-loop-timer-id', timerId.toString());
-                }
-              } else {
-                playIframe(iframe);
-              }
-            }
-          }
+        if (card.dataset.isIntersecting === 'true') {
+          playCardVideo(card);
         } else {
-          card.classList.remove('cg_portfolio_pb__card--playing');
-          const oldTimer = card.getAttribute('data-loop-timer-id');
-          if (oldTimer) {
-            clearInterval(parseInt(oldTimer, 10));
-            card.removeAttribute('data-loop-timer-id');
-          }
-          const video = thumbWrapper.querySelector('video');
-          if (video) {
-            video.pause();
-            video.remove();
-          }
-          const iframe = thumbWrapper.querySelector('iframe');
-          if (iframe) {
-            iframe.remove();
+          if (!playOffscreen) {
+            pauseCardVideo(card);
           }
         }
       });
     };
-
-    const updateViewportPlayback = () => {
-      // Viewport autoplay is disabled to prevent videos from automatically ending on a black screen
-    };
-
-
 
     const observer = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
@@ -578,7 +644,7 @@ const initPortfolioPB = () => {
       updateViewportPlayback();
     }, {
       root: null,
-      threshold: 0.2
+      threshold: 0.5
     });
 
     cards.forEach((cardNode) => {
@@ -597,17 +663,6 @@ const initPortfolioPB = () => {
       if (video) {
         video.loop = true;
       }
-    });
-
-    // Bind mouseenter event to each video card
-    cards.forEach((cardNode) => {
-      const card = cardNode as HTMLElement;
-      if (!card.classList.contains('cg_portfolio_pb__card--video')) return;
-
-      card.addEventListener('mouseenter', () => {
-        if (card.style.display === 'none') return;
-        playSingleVideo(card);
-      });
     });
 
     // Helper function to update active/visible cards
@@ -1205,57 +1260,47 @@ const initDriveVideo = () => {
       this.play().catch((e) => console.log('Google Drive video loop failed:', e));
     });
   });
+
+  // Viewport observer for standard Drive Videos and Iframes (not inside a carousel)
+  const driveVideoObserver = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      const element = entry.target;
+      const playOffscreen = element.getAttribute('data-play-offscreen') === 'on';
+      if (element.tagName === 'VIDEO') {
+        const video = element as HTMLVideoElement;
+        if (entry.isIntersecting) {
+          video.muted = true;
+          video.play().catch((e) => console.log('Viewport video play failed:', e));
+        } else {
+          if (!playOffscreen) {
+            video.pause();
+          }
+        }
+      } else if (element.tagName === 'IFRAME') {
+        const iframe = element as HTMLIFrameElement;
+        if (entry.isIntersecting) {
+          playIframe(iframe);
+        } else {
+          if (!playOffscreen) {
+            pauseIframe(iframe);
+          }
+        }
+      }
+    });
+  }, {
+    root: null,
+    threshold: 0.5
+  });
+
+  document.querySelectorAll('.cg_drive_video__element, .cg_drive_video__iframe').forEach((el) => {
+    // Skip elements inside a carousel, as they are managed by updateCarouselVideos
+    if (el.closest('.cg_carousel')) return;
+    driveVideoObserver.observe(el);
+  });
 };
 
 const initSingleVideoPlayback = () => {
-  // Global listener for the 'play' event on the document (capturing phase)
-  document.addEventListener('play', (e) => {
-    const playingVideo = e.target as HTMLVideoElement;
-    if (!playingVideo || playingVideo.tagName !== 'VIDEO') return;
-
-    // 1. Pause all other <video> elements on the page
-    const allVideos = document.querySelectorAll('video');
-    allVideos.forEach((video) => {
-      if (video !== playingVideo && !video.paused) {
-        video.pause();
-      }
-    });
-
-    // 2. Pause any playing video in cg_portfolio_pb wrappers
-    const playingWrapper = playingVideo.closest('.cg_portfolio_pb__wrapper');
-    const wrappers = document.querySelectorAll('.cg_portfolio_pb__wrapper');
-    wrappers.forEach((wrapperNode) => {
-      const wrapper = wrapperNode as HTMLElement;
-      if (wrapper === playingWrapper) {
-        return;
-      }
-      wrapper.dispatchEvent(new CustomEvent('cg-pause-playback'));
-    });
-  }, true);
-};
-
-const autoplayFirstVideoOnLoad = () => {
-  const allVideos = document.querySelectorAll('video');
-  if (allVideos.length > 0) {
-    const firstVideo = allVideos[0] as HTMLVideoElement;
-    
-    // Explicitly mute to comply with browser autoplay restrictions
-    firstVideo.muted = true;
-    firstVideo.setAttribute('muted', 'true');
-    firstVideo.setAttribute('autoplay', 'autoplay');
-
-    const tryPlay = () => {
-      firstVideo.play().catch((err) => {
-        console.log('Autoplay on load failed:', err);
-      });
-    };
-
-    if (firstVideo.readyState >= 2) {
-      tryPlay();
-    } else {
-      firstVideo.addEventListener('loadeddata', tryPlay, { once: true });
-    }
-  }
+  // Empty: Multiple videos are allowed to play simultaneously when in viewport
 };
 
 const initAll = () => {
@@ -1264,7 +1309,6 @@ const initAll = () => {
   initLightbox();
   initDriveVideo();
   initSingleVideoPlayback();
-  autoplayFirstVideoOnLoad();
 };
 
 if (document.readyState === 'loading') {

@@ -43,6 +43,7 @@ trait RenderCallbackTrait {
 		$custom_aspect_ratio = self::get_attribute_value( $attrs, 'customAspectRatio', '16/9' );
 		$custom_width        = self::get_attribute_value( $attrs, 'customWidth', '100%' );
 		$custom_height       = self::get_attribute_value( $attrs, 'customHeight', '450px' );
+		$play_offscreen      = self::get_attribute_value( $attrs, 'playOffscreen', 'off' );
 
 		// Parse IDs
 		$file_id    = self::get_google_drive_file_id( $video_url );
@@ -65,7 +66,7 @@ trait RenderCallbackTrait {
 					$stream_url  = add_query_arg( 'cg_drive_video_stream', $file_id, home_url( '/' ) );
 					$muted_attr = ( $video_muted === 'on' ) ? ' muted="muted"' : '';
 					$controls_attr = ( $video_controls === 'on' ) ? ' controls="controls"' : '';
-					$player_html = "<video class=\"cg_drive_video__element\" src=\"{$stream_url}\"{$muted_attr}{$controls_attr} playsinline=\"playsinline\"></video>";
+					$player_html = "<video class=\"cg_drive_video__element\" src=\"{$stream_url}\"{$muted_attr}{$controls_attr} playsinline=\"playsinline\" data-play-offscreen=\"{$play_offscreen}\"></video>";
 				} else {
 					$iframe_url  = "https://drive.google.com/file/d/{$file_id}/preview";
 					$player_html = HTMLUtility::render(
@@ -77,6 +78,7 @@ trait RenderCallbackTrait {
 								'frameborder'     => '0',
 								'allow'           => 'autoplay; fullscreen',
 								'allowfullscreen' => 'allowfullscreen',
+								'data-play-offscreen' => $play_offscreen,
 							],
 						]
 					);
@@ -85,7 +87,7 @@ trait RenderCallbackTrait {
 				// Fallback to standard direct video URL support
 				$muted_attr = ( $video_muted === 'on' ) ? ' muted="muted"' : '';
 				$controls_attr = ( $video_controls === 'on' ) ? ' controls="controls"' : '';
-				$player_html = "<video class=\"cg_drive_video__element\" src=\"{$video_url}\"{$muted_attr}{$controls_attr} playsinline=\"playsinline\"></video>";
+				$player_html = "<video class=\"cg_drive_video__element\" src=\"{$video_url}\"{$muted_attr}{$controls_attr} playsinline=\"playsinline\" data-play-offscreen=\"{$play_offscreen}\"></video>";
 			} else {
 				$player_html = HTMLUtility::render(
 					[
@@ -120,6 +122,7 @@ trait RenderCallbackTrait {
 							'frameborder'     => '0',
 							'allow'           => 'autoplay; encrypted-media',
 							'allowfullscreen' => 'allowfullscreen',
+							'data-play-offscreen' => $play_offscreen,
 						],
 					]
 				);

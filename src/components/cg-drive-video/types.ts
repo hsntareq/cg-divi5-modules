@@ -58,6 +58,9 @@ export interface CGDriveVideoAttrs extends InternalAttrs {
   videoCode?: {
     innerContent?: FormatBreakpointStateAttr<string>;
   };
+  playOffscreen?: {
+    innerContent?: FormatBreakpointStateAttr<string>;
+  };
   dimensionType?: {
     innerContent?: FormatBreakpointStateAttr<string>;
   };

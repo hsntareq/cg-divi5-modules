@@ -277,6 +277,33 @@
 				}
 			}
 		},
+		"playOffscreen": {
+			"type": "object",
+			"default": {
+				"innerContent": {
+					"desktop": {
+						"value": "off"
+					}
+				}
+			},
+			"settings": {
+				"innerContent": {
+					"groupType": "group-item",
+					"item": {
+						"groupSlug": "videoSettingsGroup",
+						"attrName": "playOffscreen.innerContent",
+						"priority": 35,
+						"render": true,
+						"label": "Play Even When Offscreen",
+						"description": "If enabled, the video will keep playing even when it scrolls out of the viewport.",
+						"component": {
+							"name": "divi/toggle",
+							"type": "field"
+						}
+					}
+				}
+			}
+		},
 		"videoCode": {
 			"type": "object",
 			"default": {

@@ -40,6 +40,7 @@ interface CGDriveVideoPlayerProps {
   seamlessMode: string;
   videoMuted: string;
   videoControls: string;
+  playOffscreen: string;
 }
 
 const CGDriveVideoPlayer = React.memo((props: CGDriveVideoPlayerProps): ReactElement | null => {
@@ -54,6 +55,7 @@ const CGDriveVideoPlayer = React.memo((props: CGDriveVideoPlayerProps): ReactEle
     seamlessMode,
     videoMuted,
     videoControls,
+    playOffscreen,
   } = props;
 
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -81,6 +83,7 @@ const CGDriveVideoPlayer = React.memo((props: CGDriveVideoPlayerProps): ReactEle
             muted={videoMuted === 'on'}
             controls={videoControls === 'on'}
             playsInline
+            data-play-offscreen={playOffscreen}
             onEnded={(e) => {
               const video = e.currentTarget;
               video.muted = (videoMuted === 'on');
@@ -99,6 +102,7 @@ const CGDriveVideoPlayer = React.memo((props: CGDriveVideoPlayerProps): ReactEle
             frameBorder="0"
             allow="autoplay; fullscreen"
             allowFullScreen
+            data-play-offscreen={playOffscreen}
           />
         );
       }
@@ -112,6 +116,7 @@ const CGDriveVideoPlayer = React.memo((props: CGDriveVideoPlayerProps): ReactEle
           muted={videoMuted === 'on'}
           controls={videoControls === 'on'}
           playsInline
+          data-play-offscreen={playOffscreen}
           onEnded={(e) => {
             const video = e.currentTarget;
             video.muted = (videoMuted === 'on');
@@ -145,6 +150,7 @@ const CGDriveVideoPlayer = React.memo((props: CGDriveVideoPlayerProps): ReactEle
           frameBorder="0"
           allow="autoplay; encrypted-media"
           allowFullScreen
+          data-play-offscreen={playOffscreen}
         />
       );
     }
@@ -183,6 +189,7 @@ export const CGDriveVideoEdit = (props: CGDriveVideoEditProps): ReactElement => 
   const videoMuted = attrs.videoMuted?.innerContent?.desktop?.value || 'off';
   const videoControls = attrs.videoControls?.innerContent?.desktop?.value || 'on';
   const videoCode = attrs.videoCode?.innerContent?.desktop?.value || '';
+  const playOffscreen = attrs.playOffscreen?.innerContent?.desktop?.value || 'off';
   const dimensionType = attrs.dimensionType?.innerContent?.desktop?.value || 'aspect_ratio';
   const aspectRatio = attrs.aspectRatio?.innerContent?.desktop?.value || '16/9';
   const customAspectRatio = attrs.customAspectRatio?.innerContent?.desktop?.value || '16/9';
@@ -238,6 +245,7 @@ export const CGDriveVideoEdit = (props: CGDriveVideoEditProps): ReactElement => 
           seamlessMode={seamlessMode}
           videoMuted={videoMuted}
           videoControls={videoControls}
+          playOffscreen={playOffscreen}
         />
       </div>
     </ModuleContainer>
