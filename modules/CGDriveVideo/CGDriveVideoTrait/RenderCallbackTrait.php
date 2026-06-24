@@ -38,11 +38,8 @@ trait RenderCallbackTrait {
 		$video_muted         = self::get_attribute_value( $attrs, 'videoMuted', 'off' );
 		$video_controls      = self::get_attribute_value( $attrs, 'videoControls', 'on' );
 		$video_code          = self::get_attribute_value( $attrs, 'videoCode', '' );
-		$dimension_type      = self::get_attribute_value( $attrs, 'dimensionType', 'aspect_ratio' );
 		$aspect_ratio        = self::get_attribute_value( $attrs, 'aspectRatio', '16/9' );
 		$custom_aspect_ratio = self::get_attribute_value( $attrs, 'customAspectRatio', '16/9' );
-		$custom_width        = self::get_attribute_value( $attrs, 'customWidth', '100%' );
-		$custom_height       = self::get_attribute_value( $attrs, 'customHeight', '450px' );
 		$play_offscreen      = self::get_attribute_value( $attrs, 'playOffscreen', 'off' );
 
 		// Parse IDs
@@ -50,126 +47,126 @@ trait RenderCallbackTrait {
 		$youtube_id = self::get_youtube_video_id( $youtube_url );
 
 		// Set sizing / dimensions
-		$container_style = '';
-		if ( $dimension_type === 'aspect_ratio' ) {
-			$ratio           = ( $aspect_ratio === 'custom' ) ? $custom_aspect_ratio : $aspect_ratio;
-			$container_style = "aspect-ratio: {$ratio}; width: 100%; height: auto;";
-		} else {
-			$container_style = "width: {$custom_width}; height: {$custom_height};";
-		}
+		$ratio           = ( $aspect_ratio === 'custom' ) ? $custom_aspect_ratio : $aspect_ratio;
+		$ratio           = str_replace( ':', '/', $ratio );
+		$container_style = "aspect-ratio: {$ratio}; width: 100%; height: auto;";
 
 		$player_html = '';
 
 		if ( $video_source_type === 'url' ) {
 			if ( ! empty( $file_id ) ) {
 				if ( $render_mode === 'video_tag' ) {
-					$stream_url  = add_query_arg( 'cg_drive_video_stream', $file_id, home_url( '/' ) );
-					$muted_attr = ( $video_muted === 'on' ) ? ' muted="muted"' : '';
+					$stream_url    = add_query_arg( 'cg_drive_video_stream', $file_id, home_url( '/' ) );
+					$muted_attr    = ( $video_muted === 'on' ) ? ' muted="muted"' : '';
 					$controls_attr = ( $video_controls === 'on' ) ? ' controls="controls"' : '';
-					$player_html = "<video class=\"cg_drive_video__element\" src=\"{$stream_url}\"{$muted_attr}{$controls_attr} playsinline=\"playsinline\" data-play-offscreen=\"{$play_offscreen}\"></video>";
+					$player_html   = "<video class=\"cg_drive_video__element\" src=\"{$stream_url}\"{$muted_attr}{$controls_attr} loop=\"loop\" playsinline=\"playsinline\" data-play-offscreen=\"{$play_offscreen}\"></video>";
 				} else {
 					$iframe_url  = "https://drive.google.com/file/d/{$file_id}/preview";
 					$player_html = HTMLUtility::render(
-						[
+						array(
 							'tag'        => 'iframe',
-							'attributes' => [
-								'class'           => 'cg_drive_video__iframe',
-								'src'             => $iframe_url,
-								'frameborder'     => '0',
-								'allow'           => 'autoplay; fullscreen',
-								'allowfullscreen' => 'allowfullscreen',
+							'attributes' => array(
+								'class'               => 'cg_drive_video__iframe',
+								'src'                 => $iframe_url,
+								'frameborder'         => '0',
+								'allow'               => 'autoplay; fullscreen',
+								'allowfullscreen'     => 'allowfullscreen',
 								'data-play-offscreen' => $play_offscreen,
-							],
-						]
+								'data-muted'          => $video_muted,
+							),
+						)
 					);
 				}
 			} elseif ( ! empty( $video_url ) && ( strpos( $video_url, 'http://' ) === 0 || strpos( $video_url, 'https://' ) === 0 ) ) {
 				// Fallback to standard direct video URL support
-				$muted_attr = ( $video_muted === 'on' ) ? ' muted="muted"' : '';
+				$muted_attr    = ( $video_muted === 'on' ) ? ' muted="muted"' : '';
 				$controls_attr = ( $video_controls === 'on' ) ? ' controls="controls"' : '';
-				$player_html = "<video class=\"cg_drive_video__element\" src=\"{$video_url}\"{$muted_attr}{$controls_attr} playsinline=\"playsinline\" data-play-offscreen=\"{$play_offscreen}\"></video>";
+				$player_html   = "<video class=\"cg_drive_video__element\" src=\"{$video_url}\"{$muted_attr}{$controls_attr} loop=\"loop\" playsinline=\"playsinline\" data-play-offscreen=\"{$play_offscreen}\"></video>";
 			} else {
 				$player_html = HTMLUtility::render(
-					[
+					array(
 						'tag'        => 'div',
-						'attributes' => [
+						'attributes' => array(
 							'class' => 'cg_drive_video__placeholder',
-						],
+						),
 						'children'   => 'Please enter a valid Google Drive URL or direct video link.',
-					]
+					)
 				);
 			}
 		} elseif ( $video_source_type === 'youtube' ) {
 			if ( empty( $youtube_id ) ) {
 				$player_html = HTMLUtility::render(
-					[
+					array(
 						'tag'        => 'div',
-						'attributes' => [
+						'attributes' => array(
 							'class' => 'cg_drive_video__placeholder',
-						],
+						),
 						'children'   => 'Please enter a valid YouTube or YouTube Shorts URL',
-					]
+					)
 				);
 			} else {
-				$iframe_url     = "https://www.youtube.com/embed/{$youtube_id}?autoplay=1&loop=1&playlist={$youtube_id}&mute=0&controls=1&playsinline=1&modestbranding=1&rel=0&enablejsapi=1";
+				$mute_val    = ( $video_muted === 'on' ) ? '1' : '0';
+				$iframe_url  = "https://www.youtube.com/embed/{$youtube_id}?autoplay=1&loop=1&playlist={$youtube_id}&mute={$mute_val}&controls=1&playsinline=1&modestbranding=1&rel=0&enablejsapi=1";
 				$player_html = HTMLUtility::render(
-					[
+					array(
 						'tag'        => 'iframe',
-						'attributes' => [
-							'class'           => 'cg_drive_video__iframe',
-							'src'             => $iframe_url,
-							'frameborder'     => '0',
-							'allow'           => 'autoplay; encrypted-media',
-							'allowfullscreen' => 'allowfullscreen',
+						'attributes' => array(
+							'class'               => 'cg_drive_video__iframe',
+							'src'                 => $iframe_url,
+							'frameborder'         => '0',
+							'allow'               => 'autoplay; encrypted-media',
+							'allowfullscreen'     => 'allowfullscreen',
 							'data-play-offscreen' => $play_offscreen,
-						],
-					]
+							'data-muted'          => $video_muted,
+						),
+					)
 				);
 			}
-		} else {
-			if ( empty( $video_code ) ) {
+		} elseif ( empty( $video_code ) ) {
 				$player_html = HTMLUtility::render(
-					[
+					array(
 						'tag'        => 'div',
-						'attributes' => [
+						'attributes' => array(
 							'class' => 'cg_drive_video__placeholder',
-						],
+						),
 						'children'   => 'Please enter your iframe or video embed code',
-					]
+					)
 				);
-			} else {
-				$player_html = HTMLUtility::render(
-					[
-						'tag'               => 'div',
-						'attributes'        => [
-							'class' => 'cg_drive_video__embed-wrapper',
-						],
-						'childrenSanitizer' => 'et_core_esc_previously',
-						'children'          => $video_code,
-					]
-				);
-			}
+		} else {
+			$player_html = HTMLUtility::render(
+				array(
+					'tag'               => 'div',
+					'attributes'        => array(
+						'class' => 'cg_drive_video__embed-wrapper',
+					),
+					'childrenSanitizer' => 'et_core_esc_previously',
+					'children'          => $video_code,
+				)
+			);
 		}
 
 		$container_class = 'cg_drive_video__container';
 		if ( $seamless_mode === 'on' && $video_source_type !== 'youtube' ) {
 			$container_class .= ' cg_drive_video__container--seamless';
 		}
+		if ( $video_source_type === 'youtube' ) {
+			$container_class .= ' cg_drive_video__container--youtube-hide-controls';
+		}
 
 		$container_html = HTMLUtility::render(
-			[
+			array(
 				'tag'               => 'div',
-				'attributes'        => [
+				'attributes'        => array(
 					'class' => $container_class,
 					'style' => $container_style,
-				],
+				),
 				'childrenSanitizer' => 'et_core_esc_previously',
 				'children'          => $player_html,
-			]
+			)
 		);
 
 		return Module::render(
-			[
+			array(
 				// FE only.
 				'orderIndex'          => $block->parsed_block['orderIndex'],
 				'storeInstance'       => $block->parsed_block['storeInstance'],
@@ -180,26 +177,26 @@ trait RenderCallbackTrait {
 				'id'                  => $block->parsed_block['id'],
 				'name'                => $block->block_type->name,
 				'moduleCategory'      => $block->block_type->category,
-				'classnamesFunction'  => [ CGDriveVideo::class, 'module_classnames' ],
-				'stylesComponent'     => [ CGDriveVideo::class, 'module_styles' ],
-				'scriptDataComponent' => [ CGDriveVideo::class, 'module_script_data' ],
-				'parentAttrs'         => [],
+				'classnamesFunction'  => array( CGDriveVideo::class, 'module_classnames' ),
+				'stylesComponent'     => array( CGDriveVideo::class, 'module_styles' ),
+				'scriptDataComponent' => array( CGDriveVideo::class, 'module_script_data' ),
+				'parentAttrs'         => array(),
 				'parentId'            => '',
 				'parentName'          => '',
-				'children'            => [
+				'children'            => array(
 					ElementComponents::component(
-						[
-							'attrs'         => $attrs['module']['decoration'] ?? [],
+						array(
+							'attrs'         => $attrs['module']['decoration'] ?? array(),
 							'id'            => $block->parsed_block['id'],
 
 							// FE only.
 							'orderIndex'    => $block->parsed_block['orderIndex'],
 							'storeInstance' => $block->parsed_block['storeInstance'],
-						]
+						)
 					),
 					$container_html,
-				],
-			]
+				),
+			)
 		);
 	}
 

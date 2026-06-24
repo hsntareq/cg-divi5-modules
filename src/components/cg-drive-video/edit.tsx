@@ -62,8 +62,7 @@ const CGDriveVideoPlayer = React.memo((props: CGDriveVideoPlayerProps): ReactEle
 
   useEffect(() => {
     if (videoRef.current) {
-      videoRef.current.muted = (videoMuted === 'on');
-      videoRef.current.load();
+      videoRef.current.muted = true; // Always muted in builder
       videoRef.current.play().catch((err) => {
         console.log('React VB Autoplay failed:', err);
       });
@@ -80,17 +79,11 @@ const CGDriveVideoPlayer = React.memo((props: CGDriveVideoPlayerProps): ReactEle
             className="cg_drive_video__element"
             src={streamUrl}
             autoPlay
-            muted={videoMuted === 'on'}
+            muted={true} // Always muted in builder
+            loop
             controls={videoControls === 'on'}
             playsInline
             data-play-offscreen={playOffscreen}
-            onEnded={(e) => {
-              const video = e.currentTarget;
-              video.muted = (videoMuted === 'on');
-              video.src = streamUrl;
-              video.load();
-              video.play().catch((err) => console.log('VB Autoplay loop failed:', err));
-            }}
           />
         );
       } else {
@@ -103,6 +96,7 @@ const CGDriveVideoPlayer = React.memo((props: CGDriveVideoPlayerProps): ReactEle
             allow="autoplay; fullscreen"
             allowFullScreen
             data-play-offscreen={playOffscreen}
+            data-muted={videoMuted}
           />
         );
       }
@@ -113,17 +107,11 @@ const CGDriveVideoPlayer = React.memo((props: CGDriveVideoPlayerProps): ReactEle
           className="cg_drive_video__element"
           src={videoUrl}
           autoPlay
-          muted={videoMuted === 'on'}
+          muted={true} // Always muted in builder
+          loop
           controls={videoControls === 'on'}
           playsInline
           data-play-offscreen={playOffscreen}
-          onEnded={(e) => {
-            const video = e.currentTarget;
-            video.muted = (videoMuted === 'on');
-            video.src = videoUrl;
-            video.load();
-            video.play().catch((err) => console.log('VB Autoplay loop failed:', err));
-          }}
         />
       );
     } else {
@@ -141,7 +129,7 @@ const CGDriveVideoPlayer = React.memo((props: CGDriveVideoPlayerProps): ReactEle
         </div>
       );
     } else {
-      const iframeUrl = `https://www.youtube.com/embed/${youtubeId}?autoplay=1&loop=1&playlist=${youtubeId}&mute=0&controls=1&playsinline=1&modestbranding=1&rel=0&enablejsapi=1`;
+      const iframeUrl = `https://www.youtube.com/embed/${youtubeId}?autoplay=1&loop=1&playlist=${youtubeId}&mute=1&controls=1&playsinline=1&modestbranding=1&rel=0&enablejsapi=1`;
       return (
         <iframe
           className="cg_drive_video__iframe"
@@ -150,6 +138,7 @@ const CGDriveVideoPlayer = React.memo((props: CGDriveVideoPlayerProps): ReactEle
           allow="autoplay; encrypted-media"
           allowFullScreen
           data-play-offscreen={playOffscreen}
+          data-muted={videoMuted}
         />
       );
     }
@@ -189,11 +178,8 @@ export const CGDriveVideoEdit = (props: CGDriveVideoEditProps): ReactElement => 
   const videoControls = attrs.videoControls?.innerContent?.desktop?.value || 'on';
   const videoCode = attrs.videoCode?.innerContent?.desktop?.value || '';
   const playOffscreen = attrs.playOffscreen?.innerContent?.desktop?.value || 'off';
-  const dimensionType = attrs.dimensionType?.innerContent?.desktop?.value || 'aspect_ratio';
   const aspectRatio = attrs.aspectRatio?.innerContent?.desktop?.value || '16/9';
   const customAspectRatio = attrs.customAspectRatio?.innerContent?.desktop?.value || '16/9';
-  const customWidth = attrs.customWidth?.innerContent?.desktop?.value || '100%';
-  const customHeight = attrs.customHeight?.innerContent?.desktop?.value || '450px';
 
   // Parse IDs from URLs
   const fileId = getGoogleDriveFileId(videoUrl);
@@ -201,20 +187,16 @@ export const CGDriveVideoEdit = (props: CGDriveVideoEditProps): ReactElement => 
 
   // Build the dimension styles dynamically
   const containerStyle = {} as React.CSSProperties;
-  if (dimensionType === 'aspect_ratio') {
-    const ratio = aspectRatio === 'custom' ? customAspectRatio : aspectRatio;
-    containerStyle.aspectRatio = ratio || '16/9';
-    containerStyle.width = '100%';
-    containerStyle.height = 'auto';
-  } else {
-    containerStyle.width = customWidth || '100%';
-    containerStyle.height = customHeight || '450px';
-  }
+  const ratio = (aspectRatio === 'custom' ? customAspectRatio : aspectRatio).replace(':', '/');
+  containerStyle.aspectRatio = ratio || '16/9';
+  containerStyle.width = '100%';
+  containerStyle.height = 'auto';
 
   // Determine container classes
   const containerClasses = [
     'cg_drive_video__container',
     (seamlessMode === 'on' && videoSourceType !== 'youtube') ? 'cg_drive_video__container--seamless' : '',
+    videoSourceType === 'youtube' ? 'cg_drive_video__container--youtube-hide-controls' : '',
   ].filter(Boolean).join(' ');
 
   return (
@@ -232,7 +214,46 @@ export const CGDriveVideoEdit = (props: CGDriveVideoEditProps): ReactElement => 
         attrName: 'module',
       })}
 
-      <div className={containerClasses} style={containerStyle}>
+      <div
+        className={containerClasses}
+        style={containerStyle}
+        onClick={(e) => {
+          e.stopPropagation();
+          const video = e.currentTarget.querySelector('video');
+          if (video) {
+            if (video.paused) {
+              video.play().catch((err) => console.log('VB Click play failed:', err));
+            } else {
+              video.pause();
+            }
+          }
+        }}
+        onDoubleClick={(e) => {
+          e.stopPropagation();
+        }}
+        onMouseDown={(e) => {
+          e.stopPropagation();
+        }}
+        onMouseUp={(e) => {
+          e.stopPropagation();
+        }}
+        onPointerDown={(e) => {
+          e.stopPropagation();
+        }}
+        onPointerUp={(e) => {
+          e.stopPropagation();
+        }}
+        onTouchStart={(e) => {
+          e.stopPropagation();
+        }}
+        onTouchEnd={(e) => {
+          e.stopPropagation();
+        }}
+        onDragStart={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+        }}
+      >
         <CGDriveVideoPlayer
           videoSourceType={videoSourceType}
           fileId={fileId}

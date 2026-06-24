@@ -309,16 +309,18 @@ const playIframe = (iframe: HTMLIFrameElement) => {
     } else {
       const u = new URL(src, window.location.href);
       let changed = false;
+      const isMuted = iframe.getAttribute('data-muted') !== 'off';
+      const muteVal = isMuted ? '1' : '0';
       if (u.searchParams.get('autoplay') !== '1') {
         u.searchParams.set('autoplay', '1');
         changed = true;
       }
-      if (u.searchParams.get('mute') !== '1') {
-        u.searchParams.set('mute', '1');
+      if (u.searchParams.get('mute') !== muteVal) {
+        u.searchParams.set('mute', muteVal);
         changed = true;
       }
-      if (u.searchParams.get('muted') !== '1') {
-        u.searchParams.set('muted', '1');
+      if (u.searchParams.get('muted') !== muteVal) {
+        u.searchParams.set('muted', muteVal);
         changed = true;
       }
       if (changed) {
@@ -327,17 +329,27 @@ const playIframe = (iframe: HTMLIFrameElement) => {
     }
   } catch (e) {
     let src = iframe.getAttribute('src') || '';
+    const isMuted = iframe.getAttribute('data-muted') !== 'off';
+    const muteVal = isMuted ? '1' : '0';
     if (src.indexOf('autoplay=1') < 0) {
       src = src.replace('autoplay=0', 'autoplay=1');
       if (src.indexOf('autoplay=1') < 0) {
         src += (src.indexOf('?') >= 0 ? '&' : '?') + 'autoplay=1';
       }
     }
-    if (src.indexOf('mute=1') < 0) {
-      src += (src.indexOf('?') >= 0 ? '&' : '?') + 'mute=1';
+    if (src.indexOf(`mute=${muteVal}`) < 0) {
+      if (src.indexOf('mute=') >= 0) {
+        src = src.replace(/mute=[01]/, `mute=${muteVal}`);
+      } else {
+        src += (src.indexOf('?') >= 0 ? '&' : '?') + `mute=${muteVal}`;
+      }
     }
-    if (src.indexOf('muted=1') < 0) {
-      src += (src.indexOf('?') >= 0 ? '&' : '?') + 'muted=1';
+    if (src.indexOf(`muted=${muteVal}`) < 0) {
+      if (src.indexOf('muted=') >= 0) {
+        src = src.replace(/muted=[01]/, `muted=${muteVal}`);
+      } else {
+        src += (src.indexOf('?') >= 0 ? '&' : '?') + `muted=${muteVal}`;
+      }
     }
     iframe.src = src;
   }
@@ -558,8 +570,15 @@ const updateCarouselVideos = (carousel: HTMLElement) => {
       const carouselRect = carousel.getBoundingClientRect();
       const inViewport = (carouselRect.top < window.innerHeight && carouselRect.bottom > 0);
       if (inViewport) {
-        video.muted = true;
-        video.play().catch((e) => console.log('Carousel video autoplay failed:', e));
+        const isMuted = video.hasAttribute('muted');
+        video.muted = isMuted;
+        video.play().catch((e) => {
+          console.log('Carousel video autoplay failed, trying muted fallback:', e);
+          if (!isMuted) {
+            video.muted = true;
+            video.play().catch((err) => console.log('Carousel muted fallback play failed:', err));
+          }
+        });
       } else {
         video.pause();
       }
@@ -1276,8 +1295,15 @@ const initDriveVideo = () => {
       if (element.tagName === 'VIDEO') {
         const video = element as HTMLVideoElement;
         if (entry.isIntersecting) {
-          video.muted = true;
-          video.play().catch((e) => console.log('Viewport video play failed:', e));
+          const isMuted = video.hasAttribute('muted');
+          video.muted = isMuted;
+          video.play().catch((e) => {
+            console.log('Viewport video play failed, trying muted fallback:', e);
+            if (!isMuted) {
+              video.muted = true;
+              video.play().catch((err) => console.log('Muted fallback play failed:', err));
+            }
+          });
         } else {
           if (!playOffscreen) {
             video.pause();

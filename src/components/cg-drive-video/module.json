@@ -331,42 +331,6 @@
 				}
 			}
 		},
-		"dimensionType": {
-			"type": "object",
-			"default": {
-				"innerContent": {
-					"desktop": {
-						"value": "aspect_ratio"
-					}
-				}
-			},
-			"settings": {
-				"innerContent": {
-					"groupType": "group-item",
-					"item": {
-						"groupSlug": "dimensionSettingsGroup",
-						"attrName": "dimensionType.innerContent",
-						"priority": 10,
-						"render": true,
-						"label": "Sizing Mode",
-						"component": {
-							"name": "divi/select",
-							"type": "field",
-							"props": {
-								"options": {
-									"aspect_ratio": {
-										"label": "Aspect Ratio"
-									},
-									"custom": {
-										"label": "Custom Width & Height"
-									}
-								}
-							}
-						}
-					}
-				}
-			}
-		},
 		"aspectRatio": {
 			"type": "object",
 			"default": {
@@ -399,6 +363,9 @@
 									"1/1": {
 										"label": "1:1"
 									},
+									"9/16": {
+										"label": "Shorts (9:16)"
+									},
 									"21/9": {
 										"label": "21:9"
 									},
@@ -430,58 +397,6 @@
 						"priority": 30,
 						"render": true,
 						"label": "Custom Aspect Ratio (e.g. 16/9)",
-						"component": {
-							"name": "divi/text",
-							"type": "field"
-						}
-					}
-				}
-			}
-		},
-		"customWidth": {
-			"type": "object",
-			"default": {
-				"innerContent": {
-					"desktop": {
-						"value": "100%"
-					}
-				}
-			},
-			"settings": {
-				"innerContent": {
-					"groupType": "group-item",
-					"item": {
-						"groupSlug": "dimensionSettingsGroup",
-						"attrName": "customWidth.innerContent",
-						"priority": 40,
-						"render": true,
-						"label": "Custom Width",
-						"component": {
-							"name": "divi/text",
-							"type": "field"
-						}
-					}
-				}
-			}
-		},
-		"customHeight": {
-			"type": "object",
-			"default": {
-				"innerContent": {
-					"desktop": {
-						"value": "450px"
-					}
-				}
-			},
-			"settings": {
-				"innerContent": {
-					"groupType": "group-item",
-					"item": {
-						"groupSlug": "dimensionSettingsGroup",
-						"attrName": "customHeight.innerContent",
-						"priority": 50,
-						"render": true,
-						"label": "Custom Height",
 						"component": {
 							"name": "divi/text",
 							"type": "field"

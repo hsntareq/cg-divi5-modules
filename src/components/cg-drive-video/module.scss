@@ -18,6 +18,23 @@
     box-sizing: border-box;
     transform: translateZ(0);
     -webkit-transform: translateZ(0);
+
+    &.cg_drive_video__container--youtube-hide-controls {
+      overflow: hidden;
+
+      .cg_drive_video__iframe {
+        height: 116% !important;
+        top: -8% !important;
+        transition: all 0.3s ease-in-out;
+      }
+
+      &:hover {
+        .cg_drive_video__iframe {
+          height: 100% !important;
+          top: 0 !important;
+        }
+      }
+    }
   }
 
   .cg_drive_video__container--seamless {

@@ -48,13 +48,6 @@
       }
     }
   },
-  "dimensionType": {
-    "innerContent": {
-      "desktop": {
-        "value": "aspect_ratio"
-      }
-    }
-  },
   "aspectRatio": {
     "innerContent": {
       "desktop": {
@@ -66,20 +59,6 @@
     "innerContent": {
       "desktop": {
         "value": "16/9"
-      }
-    }
-  },
-  "customWidth": {
-    "innerContent": {
-      "desktop": {
-        "value": "100%"
-      }
-    }
-  },
-  "customHeight": {
-    "innerContent": {
-      "desktop": {
-        "value": "450px"
       }
     }
   }
