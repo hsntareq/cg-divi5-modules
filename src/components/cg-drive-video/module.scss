@@ -111,3 +111,14 @@
     box-sizing: border-box;
   }
 }
+
+// Visual Builder specific styles (scopd to builder frame)
+.et-fb-root-area {
+  .cg_drive_video__container {
+    pointer-events: auto !important;
+
+    iframe, video, .cg_drive_video__embed-wrapper {
+      pointer-events: none !important;
+    }
+  }
+}

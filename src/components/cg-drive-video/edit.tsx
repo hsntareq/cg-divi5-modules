@@ -59,6 +59,20 @@ const CGDriveVideoPlayer = React.memo((props: CGDriveVideoPlayerProps): ReactEle
   } = props;
 
   const videoRef = useRef<HTMLVideoElement>(null);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+
+  const handleIframeLoad = () => {
+    if (videoSourceType === 'youtube' && iframeRef.current) {
+      setTimeout(() => {
+        if (iframeRef.current?.contentWindow) {
+          iframeRef.current.contentWindow.postMessage(
+            JSON.stringify({ event: 'command', func: 'playVideo', args: '' }),
+            '*'
+          );
+        }
+      }, 800);
+    }
+  };
 
   useEffect(() => {
     if (videoRef.current) {
@@ -132,6 +146,8 @@ const CGDriveVideoPlayer = React.memo((props: CGDriveVideoPlayerProps): ReactEle
       const iframeUrl = `https://www.youtube.com/embed/${youtubeId}?autoplay=1&loop=1&playlist=${youtubeId}&mute=1&controls=1&playsinline=1&modestbranding=1&rel=0&enablejsapi=1`;
       return (
         <iframe
+          ref={iframeRef}
+          key={youtubeId}
           className="cg_drive_video__iframe"
           src={iframeUrl}
           frameBorder="0"
@@ -139,6 +155,7 @@ const CGDriveVideoPlayer = React.memo((props: CGDriveVideoPlayerProps): ReactEle
           allowFullScreen
           data-play-offscreen={playOffscreen}
           data-muted={videoMuted}
+          onLoad={handleIframeLoad}
         />
       );
     }
@@ -185,6 +202,46 @@ export const CGDriveVideoEdit = (props: CGDriveVideoEditProps): ReactElement => 
   const fileId = getGoogleDriveFileId(videoUrl);
   const youtubeId = getYouTubeVideoId(youtubeUrl);
 
+  // Listen for YouTube/Vimeo state changes to track playback state in the builder
+  useEffect(() => {
+    const handleMessage = (e: any) => {
+      let data;
+      try {
+        data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
+      } catch (err) {
+        return;
+      }
+      if (!data) return;
+
+      const iframes = document.querySelectorAll('.cg_drive_video__iframe') as NodeListOf<HTMLIFrameElement>;
+      let targetIframe: HTMLIFrameElement | null = null;
+      for (const iframe of iframes) {
+        if (iframe.contentWindow === e.source) {
+          targetIframe = iframe;
+          break;
+        }
+      }
+      if (!targetIframe) return;
+
+      const container = targetIframe.closest('.cg_drive_video__container');
+      if (!container) return;
+
+      if (data.event === 'onStateChange') {
+        const state = data.info;
+        if (state === 1) {
+          container.setAttribute('data-vb-playing', 'true');
+        } else if (state === 2 || state === 0) {
+          container.setAttribute('data-vb-playing', 'false');
+        }
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => {
+      window.removeEventListener('message', handleMessage);
+    };
+  }, []);
+
   // Build the dimension styles dynamically
   const containerStyle = {} as React.CSSProperties;
   const ratio = (aspectRatio === 'custom' ? customAspectRatio : aspectRatio).replace(':', '/');
@@ -219,12 +276,25 @@ export const CGDriveVideoEdit = (props: CGDriveVideoEditProps): ReactElement => 
         style={containerStyle}
         onClick={(e) => {
           e.stopPropagation();
-          const video = e.currentTarget.querySelector('video');
+          const container = e.currentTarget;
+          const video = container.querySelector('video');
           if (video) {
             if (video.paused) {
               video.play().catch((err) => console.log('VB Click play failed:', err));
             } else {
               video.pause();
+            }
+          } else {
+            const iframe = container.querySelector('iframe');
+            if (iframe) {
+              const isPlaying = container.getAttribute('data-vb-playing') === 'true';
+              if (isPlaying) {
+                iframe.contentWindow?.postMessage(JSON.stringify({ event: 'command', func: 'pauseVideo', args: '' }), '*');
+                container.setAttribute('data-vb-playing', 'false');
+              } else {
+                iframe.contentWindow?.postMessage(JSON.stringify({ event: 'command', func: 'playVideo', args: '' }), '*');
+                container.setAttribute('data-vb-playing', 'true');
+              }
             }
           }
         }}
