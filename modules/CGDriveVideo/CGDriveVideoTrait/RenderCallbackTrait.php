@@ -65,7 +65,7 @@ trait RenderCallbackTrait {
 					$stream_url  = add_query_arg( 'cg_drive_video_stream', $file_id, home_url( '/' ) );
 					$muted_attr = ( $video_muted === 'on' ) ? ' muted="muted"' : '';
 					$controls_attr = ( $video_controls === 'on' ) ? ' controls="controls"' : '';
-					$player_html = "<video class=\"cg_drive_video__element\" src=\"{$stream_url}\" autoplay=\"autoplay\"{$muted_attr}{$controls_attr} playsinline=\"playsinline\"></video>";
+					$player_html = "<video class=\"cg_drive_video__element\" src=\"{$stream_url}\"{$muted_attr}{$controls_attr} playsinline=\"playsinline\"></video>";
 				} else {
 					$iframe_url  = "https://drive.google.com/file/d/{$file_id}/preview";
 					$player_html = HTMLUtility::render(
@@ -85,7 +85,7 @@ trait RenderCallbackTrait {
 				// Fallback to standard direct video URL support
 				$muted_attr = ( $video_muted === 'on' ) ? ' muted="muted"' : '';
 				$controls_attr = ( $video_controls === 'on' ) ? ' controls="controls"' : '';
-				$player_html = "<video class=\"cg_drive_video__element\" src=\"{$video_url}\" autoplay=\"autoplay\"{$muted_attr}{$controls_attr} playsinline=\"playsinline\"></video>";
+				$player_html = "<video class=\"cg_drive_video__element\" src=\"{$video_url}\"{$muted_attr}{$controls_attr} playsinline=\"playsinline\"></video>";
 			} else {
 				$player_html = HTMLUtility::render(
 					[

@@ -366,6 +366,8 @@ const getGoogleDriveVideoDuration = (fileId: string): number => {
   return (durations[fileId] || 30) * 1000;
 };
 
+
+
 const initPortfolioPB = () => {
   const wrappers = document.querySelectorAll('.cg_portfolio_pb__wrapper');
 
@@ -400,6 +402,22 @@ const initPortfolioPB = () => {
         
         if (isTarget) {
           card.classList.add('cg_portfolio_pb__card--playing');
+
+          // Pause all other wrappers
+          const wrappers = document.querySelectorAll('.cg_portfolio_pb__wrapper');
+          wrappers.forEach((w) => {
+            if (w !== wrapper) {
+              w.dispatchEvent(new CustomEvent('cg-pause-playback'));
+            }
+          });
+
+          // Pause all standard <video> tags not inside the target card
+          const allVideos = document.querySelectorAll('video');
+          allVideos.forEach((video) => {
+            if (!thumbWrapper.contains(video) && !video.paused) {
+              video.pause();
+            }
+          });
 
           const videoUrl = card.getAttribute('href');
           if (videoUrl && videoUrl !== '#') {
@@ -550,19 +568,7 @@ const initPortfolioPB = () => {
       // Viewport autoplay is disabled to prevent videos from automatically ending on a black screen
     };
 
-    const autoPlayFirstVideo = () => {
-      let firstVideoCard: HTMLElement | null = null;
-      for (const cardNode of cards) {
-        const card = cardNode as HTMLElement;
-        if (card.classList.contains('cg_portfolio_pb__card--video') && card.style.display !== 'none') {
-          firstVideoCard = card;
-          break;
-        }
-      }
-      if (firstVideoCard) {
-        playSingleVideo(firstVideoCard);
-      }
-    };
+
 
     const observer = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
@@ -793,7 +799,6 @@ const initPortfolioPB = () => {
 
         grid.classList.remove('filtering');
         updateViewportPlayback();
-        autoPlayFirstVideo();
       }, 150);
     };
 
@@ -1191,23 +1196,7 @@ const initDriveVideo = () => {
     // Explicitly set muted state based on the HTML muted attribute
     const isMuted = video.hasAttribute('muted');
     video.muted = isMuted;
-    
-    // Attempt playback immediately, with a fallback on user interaction
-    const startPlayback = () => {
-      video.play().catch((err) => {
-        console.log('Autoplay deferred, listening for user interaction:', err);
-        const playOnInteraction = () => {
-          video.play().catch((e) => console.log('Interactive play fallback failed:', e));
-          document.removeEventListener('click', playOnInteraction);
-          document.removeEventListener('scroll', playOnInteraction);
-          document.removeEventListener('touchstart', playOnInteraction);
-        };
-        document.addEventListener('click', playOnInteraction);
-        document.addEventListener('scroll', playOnInteraction);
-        document.addEventListener('touchstart', playOnInteraction);
-      });
-    };
-    startPlayback();
+
 
     video.addEventListener('ended', function () {
       this.muted = isMuted;
@@ -1218,11 +1207,64 @@ const initDriveVideo = () => {
   });
 };
 
+const initSingleVideoPlayback = () => {
+  // Global listener for the 'play' event on the document (capturing phase)
+  document.addEventListener('play', (e) => {
+    const playingVideo = e.target as HTMLVideoElement;
+    if (!playingVideo || playingVideo.tagName !== 'VIDEO') return;
+
+    // 1. Pause all other <video> elements on the page
+    const allVideos = document.querySelectorAll('video');
+    allVideos.forEach((video) => {
+      if (video !== playingVideo && !video.paused) {
+        video.pause();
+      }
+    });
+
+    // 2. Pause any playing video in cg_portfolio_pb wrappers
+    const playingWrapper = playingVideo.closest('.cg_portfolio_pb__wrapper');
+    const wrappers = document.querySelectorAll('.cg_portfolio_pb__wrapper');
+    wrappers.forEach((wrapperNode) => {
+      const wrapper = wrapperNode as HTMLElement;
+      if (wrapper === playingWrapper) {
+        return;
+      }
+      wrapper.dispatchEvent(new CustomEvent('cg-pause-playback'));
+    });
+  }, true);
+};
+
+const autoplayFirstVideoOnLoad = () => {
+  const allVideos = document.querySelectorAll('video');
+  if (allVideos.length > 0) {
+    const firstVideo = allVideos[0] as HTMLVideoElement;
+    
+    // Explicitly mute to comply with browser autoplay restrictions
+    firstVideo.muted = true;
+    firstVideo.setAttribute('muted', 'true');
+    firstVideo.setAttribute('autoplay', 'autoplay');
+
+    const tryPlay = () => {
+      firstVideo.play().catch((err) => {
+        console.log('Autoplay on load failed:', err);
+      });
+    };
+
+    if (firstVideo.readyState >= 2) {
+      tryPlay();
+    } else {
+      firstVideo.addEventListener('loadeddata', tryPlay, { once: true });
+    }
+  }
+};
+
 const initAll = () => {
   initCarousel();
   initPortfolioPB();
   initLightbox();
   initDriveVideo();
+  initSingleVideoPlayback();
+  autoplayFirstVideoOnLoad();
 };
 
 if (document.readyState === 'loading') {
