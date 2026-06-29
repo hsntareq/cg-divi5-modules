@@ -153,24 +153,7 @@ trait RenderCallbackTrait {
 			$container_class .= ' cg_drive_video__container--youtube-hide-controls';
 		}
 
-		$overlay_html = HTMLUtility::render(
-			array(
-				'tag'        => 'div',
-				'attributes' => array(
-					'class' => 'cg_drive_video__play-overlay',
-				),
-				'children'   => HTMLUtility::render(
-					array(
-						'tag'        => 'button',
-						'attributes' => array(
-							'class'      => 'cg_drive_video__play-btn',
-							'aria-label' => 'Play',
-						),
-						'children'   => '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>',
-					)
-				),
-			)
-		);
+		$overlay_html = '<div class="cg_drive_video__play-overlay"><button class="cg_drive_video__play-btn" aria-label="Play"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button></div>';
 		$player_html .= $overlay_html;
 
 		$container_html = HTMLUtility::render(
