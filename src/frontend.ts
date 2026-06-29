@@ -1255,21 +1255,6 @@ window.addEventListener('message', (e) => {
   }
   if (!targetIframe) return;
 
-  const container = targetIframe.closest('.cg_drive_video__container');
-  if (container) {
-    if (data.event === 'onStateChange') {
-      if (data.info === 1) {
-        container.classList.add('cg_drive_video__container--playing');
-      } else if (data.info === 2 || data.info === 0) {
-        container.classList.remove('cg_drive_video__container--playing');
-      }
-    } else if (data.event === 'play') {
-      container.classList.add('cg_drive_video__container--playing');
-    } else if (data.event === 'pause') {
-      container.classList.remove('cg_drive_video__container--playing');
-    }
-  }
-
   // YouTube ended: onStateChange with info === 0 (ended)
   if (data.event === 'onStateChange' && data.info === 0) {
     targetIframe.contentWindow?.postMessage(JSON.stringify({ event: 'command', func: 'seekTo', args: [0, true] }), '*');
@@ -1293,14 +1278,6 @@ const initDriveVideo = () => {
     const video = container.querySelector('video') as HTMLVideoElement | null;
     const iframe = container.querySelector('iframe') as HTMLIFrameElement | null;
 
-    const setPlayingClass = (playing: boolean) => {
-      if (playing) {
-        container.classList.add('cg_drive_video__container--playing');
-      } else {
-        container.classList.remove('cg_drive_video__container--playing');
-      }
-    };
-
     if (video) {
       const isMuted = video.hasAttribute('muted');
       video.muted = isMuted;
@@ -1311,15 +1288,6 @@ const initDriveVideo = () => {
         this.load();
         this.play().catch((e) => console.log('Google Drive video loop failed:', e));
       });
-
-      video.addEventListener('play', () => setPlayingClass(true));
-      video.addEventListener('playing', () => setPlayingClass(true));
-      video.addEventListener('pause', () => setPlayingClass(false));
-      
-      // Initial check if already playing
-      if (!video.paused) {
-        setPlayingClass(true);
-      }
     }
 
     if (iframe) {
@@ -1327,37 +1295,9 @@ const initDriveVideo = () => {
       iframe.addEventListener('load', () => {
         if (container.getAttribute('data-is-intersecting') === 'true') {
           playIframe(iframe);
-          const src = iframe.getAttribute('src') || '';
-          if (!src.includes('youtube.com') && !src.includes('youtu.be') && !src.includes('vimeo.com')) {
-            setPlayingClass(true);
-          }
         }
       });
     }
-
-    // Toggle play/pause on click
-    container.addEventListener('click', (e) => {
-      e.stopPropagation();
-      if (video) {
-        if (video.paused) {
-          video.play().catch((err) => console.log('Video click play failed:', err));
-        } else {
-          video.pause();
-        }
-      } else if (iframe) {
-        const isPlaying = container.classList.contains('cg_drive_video__container--playing');
-        if (isPlaying) {
-          pauseIframe(iframe);
-          setPlayingClass(false);
-        } else {
-          playIframe(iframe);
-          const src = iframe.getAttribute('src') || '';
-          if (!src.includes('youtube.com') && !src.includes('youtu.be') && !src.includes('vimeo.com')) {
-            setPlayingClass(true);
-          }
-        }
-      }
-    });
   });
 
   // Viewport observer for standard Drive Videos and Iframes (not inside a carousel)
@@ -1382,10 +1322,6 @@ const initDriveVideo = () => {
           });
         } else if (iframe) {
           playIframe(iframe);
-          const src = iframe.getAttribute('src') || '';
-          if (!src.includes('youtube.com') && !src.includes('youtu.be') && !src.includes('vimeo.com')) {
-            container.classList.add('cg_drive_video__container--playing');
-          }
         }
       } else {
         container.setAttribute('data-is-intersecting', 'false');
@@ -1394,7 +1330,6 @@ const initDriveVideo = () => {
             video.pause();
           } else if (iframe) {
             pauseIframe(iframe);
-            container.classList.remove('cg_drive_video__container--playing');
           }
         }
       }
