@@ -1255,6 +1255,21 @@ window.addEventListener('message', (e) => {
   }
   if (!targetIframe) return;
 
+  const container = targetIframe.closest('.cg_drive_video__container');
+  if (container) {
+    if (data.event === 'onStateChange') {
+      if (data.info === 1) {
+        container.classList.add('cg_drive_video__container--playing');
+      } else if (data.info === 2 || data.info === 0) {
+        container.classList.remove('cg_drive_video__container--playing');
+      }
+    } else if (data.event === 'play') {
+      container.classList.add('cg_drive_video__container--playing');
+    } else if (data.event === 'pause') {
+      container.classList.remove('cg_drive_video__container--playing');
+    }
+  }
+
   // YouTube ended: onStateChange with info === 0 (ended)
   if (data.event === 'onStateChange' && data.info === 0) {
     targetIframe.contentWindow?.postMessage(JSON.stringify({ event: 'command', func: 'seekTo', args: [0, true] }), '*');
@@ -1269,32 +1284,93 @@ window.addEventListener('message', (e) => {
 });
 
 const initDriveVideo = () => {
-  const videos = document.querySelectorAll('.cg_drive_video__element') as NodeListOf<HTMLVideoElement>;
-  videos.forEach((video) => {
-    if (video.getAttribute('data-loop-initialized') === 'true') return;
-    video.setAttribute('data-loop-initialized', 'true');
-    
-    // Explicitly set muted state based on the HTML muted attribute
-    const isMuted = video.hasAttribute('muted');
-    video.muted = isMuted;
+  const containers = document.querySelectorAll('.cg_drive_video__container') as NodeListOf<HTMLElement>;
 
+  containers.forEach((container) => {
+    if (container.getAttribute('data-loop-initialized') === 'true') return;
+    container.setAttribute('data-loop-initialized', 'true');
 
-    video.addEventListener('ended', function () {
-      this.muted = isMuted;
-      this.src = this.src;
-      this.load();
-      this.play().catch((e) => console.log('Google Drive video loop failed:', e));
+    const video = container.querySelector('video') as HTMLVideoElement | null;
+    const iframe = container.querySelector('iframe') as HTMLIFrameElement | null;
+
+    const setPlayingClass = (playing: boolean) => {
+      if (playing) {
+        container.classList.add('cg_drive_video__container--playing');
+      } else {
+        container.classList.remove('cg_drive_video__container--playing');
+      }
+    };
+
+    if (video) {
+      const isMuted = video.hasAttribute('muted');
+      video.muted = isMuted;
+
+      video.addEventListener('ended', function () {
+        this.muted = isMuted;
+        this.src = this.src;
+        this.load();
+        this.play().catch((e) => console.log('Google Drive video loop failed:', e));
+      });
+
+      video.addEventListener('play', () => setPlayingClass(true));
+      video.addEventListener('playing', () => setPlayingClass(true));
+      video.addEventListener('pause', () => setPlayingClass(false));
+      
+      // Initial check if already playing
+      if (!video.paused) {
+        setPlayingClass(true);
+      }
+    }
+
+    if (iframe) {
+      // Address the race condition by playing on iframe load if currently intersecting
+      iframe.addEventListener('load', () => {
+        if (container.getAttribute('data-is-intersecting') === 'true') {
+          playIframe(iframe);
+          const src = iframe.getAttribute('src') || '';
+          if (!src.includes('youtube.com') && !src.includes('youtu.be') && !src.includes('vimeo.com')) {
+            setPlayingClass(true);
+          }
+        }
+      });
+    }
+
+    // Toggle play/pause on click
+    container.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (video) {
+        if (video.paused) {
+          video.play().catch((err) => console.log('Video click play failed:', err));
+        } else {
+          video.pause();
+        }
+      } else if (iframe) {
+        const isPlaying = container.classList.contains('cg_drive_video__container--playing');
+        if (isPlaying) {
+          pauseIframe(iframe);
+          setPlayingClass(false);
+        } else {
+          playIframe(iframe);
+          const src = iframe.getAttribute('src') || '';
+          if (!src.includes('youtube.com') && !src.includes('youtu.be') && !src.includes('vimeo.com')) {
+            setPlayingClass(true);
+          }
+        }
+      }
     });
   });
 
   // Viewport observer for standard Drive Videos and Iframes (not inside a carousel)
   const driveVideoObserver = new IntersectionObserver((entries) => {
     entries.forEach((entry) => {
-      const element = entry.target;
-      const playOffscreen = element.getAttribute('data-play-offscreen') === 'on';
-      if (element.tagName === 'VIDEO') {
-        const video = element as HTMLVideoElement;
-        if (entry.isIntersecting) {
+      const container = entry.target as HTMLElement;
+      const video = container.querySelector('video') as HTMLVideoElement | null;
+      const iframe = container.querySelector('iframe') as HTMLIFrameElement | null;
+      const playOffscreen = container.querySelector('[data-play-offscreen="on"]') !== null || container.getAttribute('data-play-offscreen') === 'on';
+
+      if (entry.isIntersecting) {
+        container.setAttribute('data-is-intersecting', 'true');
+        if (video) {
           const isMuted = video.hasAttribute('muted');
           video.muted = isMuted;
           video.play().catch((e) => {
@@ -1304,18 +1380,21 @@ const initDriveVideo = () => {
               video.play().catch((err) => console.log('Muted fallback play failed:', err));
             }
           });
-        } else {
-          if (!playOffscreen) {
-            video.pause();
+        } else if (iframe) {
+          playIframe(iframe);
+          const src = iframe.getAttribute('src') || '';
+          if (!src.includes('youtube.com') && !src.includes('youtu.be') && !src.includes('vimeo.com')) {
+            container.classList.add('cg_drive_video__container--playing');
           }
         }
-      } else if (element.tagName === 'IFRAME') {
-        const iframe = element as HTMLIFrameElement;
-        if (entry.isIntersecting) {
-          playIframe(iframe);
-        } else {
-          if (!playOffscreen) {
+      } else {
+        container.setAttribute('data-is-intersecting', 'false');
+        if (!playOffscreen) {
+          if (video) {
+            video.pause();
+          } else if (iframe) {
             pauseIframe(iframe);
+            container.classList.remove('cg_drive_video__container--playing');
           }
         }
       }
@@ -1325,7 +1404,7 @@ const initDriveVideo = () => {
     threshold: 0.5
   });
 
-  document.querySelectorAll('.cg_drive_video__element, .cg_drive_video__iframe').forEach((el) => {
+  document.querySelectorAll('.cg_drive_video__container').forEach((el) => {
     // Skip elements inside a carousel, as they are managed by updateCarouselVideos
     if (el.closest('.cg_carousel')) return;
     driveVideoObserver.observe(el);

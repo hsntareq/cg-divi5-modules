@@ -337,6 +337,11 @@ export const CGDriveVideoEdit = (props: CGDriveVideoEditProps): ReactElement => 
           videoControls={videoControls}
           playOffscreen={playOffscreen}
         />
+        <div className="cg_drive_video__play-overlay">
+          <button className="cg_drive_video__play-btn" aria-label="Play">
+            <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+          </button>
+        </div>
       </div>
     </ModuleContainer>
   );
