@@ -24,6 +24,13 @@ const getAttrValue = (attr: any, defaultValue: string): string => {
   return defaultValue;
 };
 
+const getYoutubeVideoId = (url: string): string | null => {
+  if (!url) return null;
+  const pattern = /^(?:https?:\/\/)?(?:www\.)?(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))([a-zA-Z0-9_-]{11})/;
+  const match = url.match(pattern);
+  return match ? match[1] : null;
+};
+
 const isDirectVideo = (url: string): boolean => {
   if (!url) return false;
   if (/\.(mp4|webm|ogg|ogv)(\?|$)/i.test(url)) {
@@ -89,6 +96,18 @@ export const PortfolioPBEdit = (props: PortfolioPBEditProps): ReactElement => {
   const openInNewTab = getAttrValue(attrs?.openInNewTab, 'off');
   const pauseOnTabSwitch = getAttrValue(attrs?.pauseOnTabSwitch, 'on');
   const fillRow = getAttrValue(attrs?.fillRow, 'off');
+
+  const win = typeof window !== 'undefined' ? (window as any) : {};
+  const globalSet = win.cgPortfolioPBSettings || {};
+  const globalVideoSettings = {
+    youtubeControls: globalSet.youtubeControls || 'off',
+    videoMuted: globalSet.videoMuted || 'on',
+    videoLoop: globalSet.videoLoop || 'on',
+    videoAutoplay: globalSet.videoAutoplay || 'on',
+    seamlessMode: globalSet.seamlessMode || 'off',
+    playOffscreen: globalSet.playOffscreen || 'off',
+    loopSingle: globalSet.loopSingle || 'off',
+  };
 
   // React state for fetched data & filters
   const [categories, setCategories] = useState<any[]>([]);
@@ -454,42 +473,44 @@ export const PortfolioPBEdit = (props: PortfolioPBEditProps): ReactElement => {
                   const isLightbox = viewType === 'lightbox' || viewType === 'video';
 
                   // Mute and autoplay Visual Builder iframe/video if video card
-                  let mutedUrl = post.meta?.portfolio_pb_video_url;
+                  let mutedUrl = post.meta?.portfolio_pb_video_url || '';
                   const isDirect = isVideoCard && mutedUrl && isDirectVideo(mutedUrl);
+                  const ytId = isVideoCard && mutedUrl ? getYoutubeVideoId(mutedUrl) : null;
 
                   if (isVideoCard && mutedUrl && !isDirect) {
-                    if (mutedUrl.includes('drive.google.com')) {
+                    if (ytId) {
+                      const muteVal = '1';
+                      const loopVal = globalVideoSettings.videoLoop === 'on' ? '1' : '0';
+                      const controlsVal = globalVideoSettings.youtubeControls === 'on' ? '1' : '0';
+                      mutedUrl = `https://www.youtube.com/embed/${ytId}?autoplay=0&mute=${muteVal}&loop=${loopVal}&controls=${controlsVal}&playsinline=1&modestbranding=1&rel=0&enablejsapi=1`;
+                      if (globalVideoSettings.videoLoop === 'on') {
+                        mutedUrl += `&playlist=${ytId}`;
+                      }
+                    } else if (mutedUrl.includes('drive.google.com')) {
                       mutedUrl = getGoogleDrivePreviewUrl(mutedUrl);
-                    }
-                    const autoplayVal = '0';
-                    try {
-                      const u = new URL(mutedUrl);
-                      u.searchParams.set('autoplay', autoplayVal);
-                      u.searchParams.set('mute', '1');
-                      u.searchParams.set('muted', '1');
-                      if (mutedUrl.includes('youtube.com') || mutedUrl.includes('youtu.be')) {
-                        u.searchParams.set('enablejsapi', '1');
-                      }
-                      if (mutedUrl.includes('drive.google.com')) {
-                        const fileId = getGoogleDriveFileId(mutedUrl);
-                        if (fileId) {
+                      const loopVal = globalVideoSettings.videoLoop === 'on' ? '1' : '0';
+                      try {
+                        const u = new URL(mutedUrl);
+                        u.searchParams.set('autoplay', '0');
+                        u.searchParams.set('mute', '1');
+                        u.searchParams.set('muted', '1');
+                        if (globalVideoSettings.videoLoop === 'on') {
                           u.searchParams.set('loop', '1');
-                          u.searchParams.set('playlist', fileId);
+                          const fileId = getGoogleDriveFileId(mutedUrl);
+                          if (fileId) {
+                            u.searchParams.set('playlist', fileId);
+                          }
                         }
-                      }
-                      mutedUrl = u.toString();
-                    } catch (e) {
-                      let extra = `autoplay=${autoplayVal}&mute=1&muted=1`;
-                      if (mutedUrl.includes('youtube.com') || mutedUrl.includes('youtu.be')) {
-                        extra += '&enablejsapi=1';
-                      }
-                      if (mutedUrl.includes('drive.google.com')) {
-                        const fileId = getGoogleDriveFileId(mutedUrl);
-                        if (fileId) {
-                          extra += `&loop=1&playlist=${fileId}`;
-                        }
-                      }
-                      mutedUrl = mutedUrl + (mutedUrl.indexOf('?') >= 0 ? '&' : '?') + extra;
+                        mutedUrl = u.toString();
+                      } catch (e) {}
+                    } else {
+                      try {
+                        const u = new URL(mutedUrl);
+                        u.searchParams.set('autoplay', '0');
+                        u.searchParams.set('mute', '1');
+                        u.searchParams.set('muted', '1');
+                        mutedUrl = u.toString();
+                      } catch (e) {}
                     }
                   }
 
@@ -522,7 +543,7 @@ export const PortfolioPBEdit = (props: PortfolioPBEditProps): ReactElement => {
                                src={mutedUrl}
                                width="100%"
                                height="100%"
-                               className={mutedUrl.includes('drive.google.com') ? 'cg_portfolio_pb__iframe--gdrive' : ''}
+                               className={`${mutedUrl.includes('drive.google.com') ? 'cg_portfolio_pb__iframe--gdrive' : ''} ${globalVideoSettings.seamlessMode === 'on' ? 'cg_portfolio_pb__iframe--seamless' : ''}`}
                                style={{ border: 'none', display: 'block', position: 'absolute', top: 0, left: 0, zIndex: 1 }}
                                allow="autoplay; fullscreen"
                                allowFullScreen

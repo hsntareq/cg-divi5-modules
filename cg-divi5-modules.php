@@ -563,3 +563,130 @@ function cg_serve_local_file_range( $filepath ) {
 	fclose( $file );
 	exit;
 }
+
+/**
+ * Toggle sanitization callback: sanitizes checkbox value to 'on' or 'off'.
+ */
+function cg_portfolio_pb_sanitize_toggle( $value ) {
+	return $value === 'on' ? 'on' : 'off';
+}
+
+/**
+ * Register submenu under the Divi menu in WP Admin.
+ */
+function cg_portfolio_pb_add_settings_menu() {
+	add_submenu_page(
+		'et_divi_options',
+		'PortfolioPB Video Settings',
+		'PortfolioPB Video Settings',
+		'manage_options',
+		'portfolio-pb-video-settings',
+		'cg_portfolio_pb_render_settings_page'
+	);
+}
+add_action( 'admin_menu', 'cg_portfolio_pb_add_settings_menu', 99 );
+
+/**
+ * Register settings options.
+ */
+function cg_portfolio_pb_register_settings() {
+	register_setting( 'portfolio_pb_video_settings_group', 'portfolio_pb_youtube_controls', [ 'sanitize_callback' => 'cg_portfolio_pb_sanitize_toggle', 'default' => 'off' ] );
+	register_setting( 'portfolio_pb_video_settings_group', 'portfolio_pb_video_muted', [ 'sanitize_callback' => 'cg_portfolio_pb_sanitize_toggle', 'default' => 'on' ] );
+	register_setting( 'portfolio_pb_video_settings_group', 'portfolio_pb_video_loop', [ 'sanitize_callback' => 'cg_portfolio_pb_sanitize_toggle', 'default' => 'on' ] );
+	register_setting( 'portfolio_pb_video_settings_group', 'portfolio_pb_video_autoplay', [ 'sanitize_callback' => 'cg_portfolio_pb_sanitize_toggle', 'default' => 'on' ] );
+	register_setting( 'portfolio_pb_video_settings_group', 'portfolio_pb_seamless_mode', [ 'sanitize_callback' => 'cg_portfolio_pb_sanitize_toggle', 'default' => 'off' ] );
+	register_setting( 'portfolio_pb_video_settings_group', 'portfolio_pb_play_offscreen', [ 'sanitize_callback' => 'cg_portfolio_pb_sanitize_toggle', 'default' => 'off' ] );
+	register_setting( 'portfolio_pb_video_settings_group', 'portfolio_pb_loop_single', [ 'sanitize_callback' => 'cg_portfolio_pb_sanitize_toggle', 'default' => 'off' ] );
+}
+add_action( 'admin_init', 'cg_portfolio_pb_register_settings' );
+
+/**
+ * Render admin settings page.
+ */
+function cg_portfolio_pb_render_settings_page() {
+	?>
+	<div class="wrap" style="max-width: 800px; margin-top: 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen-Sans, Ubuntu, Cantarell, 'Helvetica Neue', sans-serif;">
+		<div style="background: #fff; border: 1px solid #ccd0d4; border-radius: 4px; padding: 20px 30px; box-shadow: 0 1px 3px rgba(0,0,0,.05);">
+			<h1 style="margin-top: 0; padding-bottom: 15px; border-bottom: 1px solid #eee; color: #1d2327; font-size: 23px; font-weight: 600;">PortfolioPB Video Settings</h1>
+			<form method="post" action="options.php">
+				<?php settings_fields( 'portfolio_pb_video_settings_group' ); ?>
+				<table class="form-table" style="margin-top: 15px;">
+					<tr valign="top">
+						<th scope="row" style="width: 220px; font-weight: 600; padding: 20px 10px 20px 0;">Show YouTube Controls</th>
+						<td style="padding: 20px 10px;">
+							<input type="checkbox" name="portfolio_pb_youtube_controls" value="on" <?php checked( get_option( 'portfolio_pb_youtube_controls', 'off' ), 'on' ); ?> style="margin-right: 8px; transform: scale(1.15);" />
+							<span class="description" style="color: #646970;">Display standard playback controls on YouTube videos.</span>
+						</td>
+					</tr>
+					<tr valign="top">
+						<th scope="row" style="font-weight: 600; padding: 20px 10px 20px 0;">Mute Video</th>
+						<td style="padding: 20px 10px;">
+							<input type="checkbox" name="portfolio_pb_video_muted" value="on" <?php checked( get_option( 'portfolio_pb_video_muted', 'on' ), 'on' ); ?> style="margin-right: 8px; transform: scale(1.15);" />
+							<span class="description" style="color: #646970;">Autoplay videos must be muted to comply with modern browser policies.</span>
+						</td>
+					</tr>
+					<tr valign="top">
+						<th scope="row" style="font-weight: 600; padding: 20px 10px 20px 0;">Loop Video</th>
+						<td style="padding: 20px 10px;">
+							<input type="checkbox" name="portfolio_pb_video_loop" value="on" <?php checked( get_option( 'portfolio_pb_video_loop', 'on' ), 'on' ); ?> style="margin-right: 8px; transform: scale(1.15);" />
+							<span class="description" style="color: #646970;">Loop playback continuously.</span>
+						</td>
+					</tr>
+					<tr valign="top">
+						<th scope="row" style="font-weight: 600; padding: 20px 10px 20px 0;">Autoplay Video</th>
+						<td style="padding: 20px 10px;">
+							<input type="checkbox" name="portfolio_pb_video_autoplay" value="on" <?php checked( get_option( 'portfolio_pb_video_autoplay', 'on' ), 'on' ); ?> style="margin-right: 8px; transform: scale(1.15);" />
+							<span class="description" style="color: #646970;">Automatically play video cards when they enter the viewport or are hovered.</span>
+						</td>
+					</tr>
+					<tr valign="top">
+						<th scope="row" style="font-weight: 600; padding: 20px 10px 20px 0;">Seamless Mode (Hide Branding & Title)</th>
+						<td style="padding: 20px 10px;">
+							<input type="checkbox" name="portfolio_pb_seamless_mode" value="on" <?php checked( get_option( 'portfolio_pb_seamless_mode', 'off' ), 'on' ); ?> style="margin-right: 8px; transform: scale(1.15);" />
+							<span class="description" style="color: #646970;">Slightly scales/crops the iframe to hide top headers, branding, and player options.</span>
+						</td>
+					</tr>
+					<tr valign="top">
+						<th scope="row" style="font-weight: 600; padding: 20px 10px 20px 0;">Play Even When Offscreen</th>
+						<td style="padding: 20px 10px;">
+							<input type="checkbox" name="portfolio_pb_play_offscreen" value="on" <?php checked( get_option( 'portfolio_pb_play_offscreen', 'off' ), 'on' ); ?> style="margin-right: 8px; transform: scale(1.15);" />
+							<span class="description" style="color: #646970;">Keep video cards playing even when scrolled out of viewport.</span>
+						</td>
+					</tr>
+					<tr valign="top">
+						<th scope="row" style="font-weight: 600; padding: 20px 10px 20px 0;">Loop Single Video</th>
+						<td style="padding: 20px 10px;">
+							<input type="checkbox" name="portfolio_pb_loop_single" value="on" <?php checked( get_option( 'portfolio_pb_loop_single', 'off' ), 'on' ); ?> style="margin-right: 8px; transform: scale(1.15);" />
+							<span class="description" style="color: #646970;">Check this to loop a single video continuously. Uncheck to play next video one after another.</span>
+						</td>
+					</tr>
+				</table>
+				<div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
+					<?php submit_button(); ?>
+				</div>
+			</form>
+		</div>
+	</div>
+	<?php
+}
+
+/**
+ * Output settings as a global JavaScript object for front-end and builder scripts.
+ */
+function cg_portfolio_pb_inline_settings() {
+	?>
+	<script>
+		window.cgPortfolioPBSettings = {
+			youtubeControls: <?php echo json_encode( get_option( 'portfolio_pb_youtube_controls', 'off' ) ); ?>,
+			videoMuted: <?php echo json_encode( get_option( 'portfolio_pb_video_muted', 'on' ) ); ?>,
+			videoLoop: <?php echo json_encode( get_option( 'portfolio_pb_video_loop', 'on' ) ); ?>,
+			videoAutoplay: <?php echo json_encode( get_option( 'portfolio_pb_video_autoplay', 'on' ) ); ?>,
+			seamlessMode: <?php echo json_encode( get_option( 'portfolio_pb_seamless_mode', 'off' ) ); ?>,
+			playOffscreen: <?php echo json_encode( get_option( 'portfolio_pb_play_offscreen', 'off' ) ); ?>,
+			loopSingle: <?php echo json_encode( get_option( 'portfolio_pb_loop_single', 'off' ) ); ?>,
+		};
+	</script>
+	<?php
+}
+add_action( 'wp_head', 'cg_portfolio_pb_inline_settings' );
+add_action( 'admin_head', 'cg_portfolio_pb_inline_settings' );

@@ -149,7 +149,12 @@ trait RenderCallbackTrait {
 		$module_id          = $block->parsed_block['id'] ?? uniqid();
 
 		// Determine taxonomy
-		$taxonomy = ( 'project' === $post_type ) ? 'project_category' : 'category';
+		$taxonomy = 'category';
+		if ( 'project' === $post_type ) {
+			$taxonomy = 'project_category';
+		} elseif ( 'product' === $post_type ) {
+			$taxonomy = 'product_cat';
+		}
 
 		// Get all terms of the taxonomy
 		$all_terms = get_terms(
@@ -625,8 +630,16 @@ trait RenderCallbackTrait {
 
 		$grid_class_extra = '';
 
+		$youtube_controls_opt = get_option( 'portfolio_pb_youtube_controls', 'off' );
+		$video_muted_opt      = get_option( 'portfolio_pb_video_muted', 'on' );
+		$video_loop_opt       = get_option( 'portfolio_pb_video_loop', 'on' );
+		$video_autoplay_opt   = get_option( 'portfolio_pb_video_autoplay', 'on' );
+		$seamless_mode_opt    = get_option( 'portfolio_pb_seamless_mode', 'off' );
+		$play_offscreen_opt   = get_option( 'portfolio_pb_play_offscreen', 'off' );
+		$loop_single_opt      = get_option( 'portfolio_pb_loop_single', 'off' );
+
 		$content_html = sprintf(
-			'<div class="cg_portfolio_pb__wrapper" style="%s" data-pause-on-tab-switch="%s">
+			'<div class="cg_portfolio_pb__wrapper" style="%s" data-pause-on-tab-switch="%s" data-youtube-controls="%s" data-video-muted="%s" data-video-loop="%s" data-video-autoplay="%s" data-seamless-mode="%s" data-play-offscreen="%s" data-loop-single="%s">
 				<div class="cg_portfolio_pb__tabs-container">
 					%s
 				</div>
@@ -638,6 +651,13 @@ trait RenderCallbackTrait {
 			</div>',
 			$inline_styles,
 			esc_attr( $pause_on_tab_switch ),
+			esc_attr( $youtube_controls_opt ),
+			esc_attr( $video_muted_opt ),
+			esc_attr( $video_loop_opt ),
+			esc_attr( $video_autoplay_opt ),
+			esc_attr( $seamless_mode_opt ),
+			esc_attr( $play_offscreen_opt ),
+			esc_attr( $loop_single_opt ),
 			$tabs_html,
 			$radios_html,
 			esc_attr( $grid_columns ),
